@@ -337,7 +337,7 @@ constraints.append( gammaGoal*v + xgoal == xbefore )
 # building objective
 ###############################################################################
 minimaIter = 0
-startMinima = 0
+startMinima = 27
 
 allValuesFirst = []
 allValuesSecond = []
@@ -378,9 +378,7 @@ for i in range(startMinima,XspaceMinima):
         # solve
         ###############################################################################
         prob = Problem(objective, mincon)
-        #prob.solve(solver=cvx.SCS, verbose=True)
         prob.solve(solver=cvx.SCS)
-        #prob.solve(solver=cvx.CVXOPT)
         print "minima",i,"/",XspaceMinima," => ",prob.value
         allValuesFirst.append(prob.value)
         if prob.value < inf and prob.value > -inf:
@@ -433,7 +431,7 @@ for i in range(startMinima,XspaceMinima):
                         if bestMinimaValue > prob.value:
                                 bestMinimaValue = prob.value
                                 bestMinima = i
-                        #break
+                        break
         else:
                 allValuesSecond.append(prob.value)
         if i%100==0:
@@ -487,7 +485,7 @@ if prob.value < inf:
         for i in range(0,N_walkablesurfaces-1):
                 if x_connection[i].value is not None:
                         for k in range(0,maxNonzeroDim):
-                                W = upperBodyConnector[i][k]
+                                W = Connectors_Vstack[i][0][k]
                                 plot.polytopeFromVertices(\
                                                 W.getVertexRepresentation(),\
                                                 fcolor=colorScene)
@@ -520,10 +518,14 @@ if prob.value < inf:
                         thetaV[ctr] = htoq(k,h1,h2,h3)[1]
                         ctr = ctr+1 
 
-        svLeftFname= "data/path/xpathL.dat"
-        svRightFname = "data/path/xpathR.dat"
-        svMiddleFname = "data/path/xpathM.dat"
-        svQValuesFname = "data/path/xpathQ.dat"
+        output_folder = os.environ["MPP_PATH"]+"mpp-environment/output/"
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+
+        svLeftFname  =   output_folder+"/xpathL.dat"
+        svRightFname =   output_folder+"/xpathR.dat"
+        svMiddleFname =  output_folder+"/xpathM.dat"
+        svQValuesFname = output_folder+"/xpathQ.dat"
 
 
         pickle.dump( svPathsLeft, open( svLeftFname, "wb" ) )
