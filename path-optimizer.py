@@ -106,8 +106,6 @@ print "----------------------------------------------------------------"
 print "relevant walkable surfaces:", indices
 print "----------------------------------------------------------------"
 
-#for I in range(0,len(indices)):
-        #Wsurfaces.append(Wsurfaces_candidates[indices[I]])
 ###############################################################################
 # Check which path has the best chances of finding a feasible trajectory
 ###############################################################################
@@ -123,6 +121,7 @@ for i in range(0,len(path)):
         p = path[i]
         Wsurfaces.append(Wsurfaces_candidates[p])
         Wsurfaces_Vstack.append(Wsurfaces_Vstack_candidates[p])
+        print len(Wsurfaces_Vstack_candidates[p])
 
 for i in range(0,len(path)-1):
         p = path[i]
@@ -176,9 +175,9 @@ NdI = distanceInMetersToNumberOfPoints(dI)
 pathPlanes = []
 W=Wsurfaces[0]
 Xmiddle = getMiddlePathStart(start,Connectors[0][0],startNormal,connectorNormal[0],W,NdI)
+print Xmiddle[0],Xmiddle[-1]
+
 pathPlanesStart = middlePathToHyperplane(Xmiddle)
-xx = (start.T+np.array((0,0,0.1))).T
-plot.point(xx,color=(0,0,0,1))
 
 for i in range(0,len(Xmiddle)):
         pathPlanes.append(pathPlanesStart[i])
@@ -192,9 +191,10 @@ for i in range(0,N_c-1):
         dcc = distanceWalkableSurfaceWalkableSurface(C,Cnext)
         Ndcc = distanceInMetersToNumberOfPoints(dcc)
         M_w.append(Ndcc)
-        W=Wsurfaces[i]
+        W=Wsurfaces[i+1]
         Xmiddle = getMiddlePath(C,Cnext,connectorNormal[i],connectorNormal[i+1],W,Ndcc)
         pathPlanesConnector.append( middlePathToHyperplane(Xmiddle) )
+        print Xmiddle[0],Xmiddle[-1]
 
 for i in range(0,len(pathPlanesConnector)):
         for j in range(0,len(pathPlanesConnector[i])):
@@ -205,7 +205,8 @@ Ndg = distanceInMetersToNumberOfPoints(dG)
 M_w.append(Ndg)
 
 W=Wsurfaces[len(path)-1]
-Xmiddle = getMiddlePathStart(goal,Connectors[N_c-1][0],goalNormal,connectorNormal[N_c-1],W,Ndg)
+Xmiddle = getMiddlePathGoal(Connectors[N_c-1][0],goal,connectorNormal[N_c-1],goalNormal,W,Ndg)
+print Xmiddle[0],Xmiddle[-1]
 pathPlanesGoal = middlePathToHyperplane(Xmiddle)
 
 for i in range(0,len(pathPlanesGoal)):
@@ -213,6 +214,8 @@ for i in range(0,len(pathPlanesGoal)):
 
 ###############################################################################
 ## DEBUG plot
+xx = (start.T+np.array((0,0,0.1))).T
+plot.point(xx,color=(0,0,0,1))
 x_WS = []
 for i in range(0,N_walkablesurfaces):
         print "WS ",i,"has",M_w[i],"points to optimize"
@@ -221,21 +224,33 @@ for i in range(0,N_walkablesurfaces):
                 x_WS_tmp.append(Variable(3,1))
         x_WS.append(x_WS_tmp)
 
-for i in range(0,len(pathPlanes)):
-        [a,b,ar,xcur]=pathPlanes[i]
-        l1 = xcur-0.5*ar
-        l2 = xcur+0.5*ar
-        l3 = xcur
-        L = np.array([l1,l2,l3])
-        plot.point(l1)
-        plot.point(l2)
-        plot.point(l3,color=(0,0,0,1))
-        plot.line(L,lw=0.3)
+ctr=0
+for i in range(0,N_walkablesurfaces):
+        print "surface",i
+        for j in range(0,M_w[i]):
+                [a,b,ar,xcur]=pathPlanes[ctr]
+                l1 = xcur-0.5*ar
+                l2 = xcur+0.5*ar
+                l3 = xcur
+                L = np.array([l1,l2,l3])
+                plot.point(l1)
+                plot.point(l2,color=(1,0,1,1))
+                plot.point(l3,color=(0,0,0,1))
+                plot.line(L,lw=0.3)
+                ctr=ctr+1
 
+for i in range(len(Wsurfaces)):
+        V = Wsurfaces[i].getVertexRepresentation()
+        plot.walkableSurface( V,\
+                        fcolor=((0.2,0.2,0.2,0.5)), thickness=0.01)
+
+#plot.show()
+#sys.exit(0)
 ###############################################################################
 # building constraints
 ###############################################################################
 constraints = []
+objfunc = 0
 
 ## start/goal regions constraints
 constraints.append(norm(x_start - start) <= PATH_RADIUS_START_REGION)
@@ -269,15 +284,35 @@ for i in range(0,N_walkablesurfaces):
                 constraints.append( np.matrix(W.ap)*x_WS[i][j] == W.bp)
 
 ###############################################################################
+ctr=0
 for i in range(0,N_walkablesurfaces):
         ### constraints for points being on the hyperplanes of the middle path
-        P = pathPlanes[i]
+        for j in range(0,len(x_WS[i])):
+                [a,b,ar,xcur] = pathPlanes[ctr]
+                constraints.append(np.matrix(a).T*x_WS[i][j] == b)
+                ctr+=1
 
 ###############################################################################
 ### constraint: x_WS should lie in the same functional space
 
+M = 100
+t = np.linspace(0,1,M)
+F = Fpoly(t)
+for i in range(0,N_walkablesurfaces):
+        ### constraints for points being on the hyperplanes of the middle path
+        N = len(x_WS[i])
+        Fweight = Variable(M,3)
+        if N >= M:
+                print "functional space not big enough",M,"<",N
+                sys.exit(0)
+
+        for j in range(0,N):
+                constraints.append( x_WS[i][j] == Fweight.T*F[j] )
+
+        objfunc += norm(Fweight)
+
 ###############################################################################
-### constraint: x_WS connections
+### constraint: x_WS connections on connectors
 constraints.append( x_WS[0][0] == x_start)
 constraints.append( x_WS[0][M_w[0]-1] == x_connection[0])
 
@@ -289,6 +324,20 @@ for i in range(1,N_walkablesurfaces-1):
 Lws = len(x_WS[N_walkablesurfaces-1])-1
 constraints.append( x_WS[N_walkablesurfaces-1][0] == x_connection[N_walkablesurfaces-2])
 constraints.append( x_WS[N_walkablesurfaces-1][Lws] == x_goal)
+
+## catch the imprecision of the previous cvx solver
+#precision = 0.001
+#constraints.append( norm(x_WS[0][0] - x_start) <= precision)
+#constraints.append( norm(x_WS[0][M_w[0]-1] - x_connection[0]) <= precision)
+#
+#for i in range(1,N_walkablesurfaces-1):
+#        Lws = len(x_WS[i])-1
+#        constraints.append( norm(x_WS[i][0] - x_connection[i-1]) <= precision)
+#        constraints.append( norm(x_WS[i][Lws] - x_connection[i]) <= precision)
+#
+#Lws = len(x_WS[N_walkablesurfaces-1])-1
+#constraints.append( norm(x_WS[N_walkablesurfaces-1][0] - x_connection[N_walkablesurfaces-2]) <= precision)
+#constraints.append( norm(x_WS[N_walkablesurfaces-1][Lws] - x_goal) <= precision)
 
 ###############################################################################
 ### constraint: distance between x_WS
@@ -336,14 +385,11 @@ constraints.append( gammaGoal*v + xgoal == xbefore )
 ###############################################################################
 # building objective
 ###############################################################################
-minimaIter = 0
 startMinima = 27
 
 allValuesFirst = []
-allValuesSecond = []
 
 start = timer()
-
 bestMinima = 0
 bestMinimaValue = inf
 for i in range(startMinima,XspaceMinima):
@@ -353,9 +399,8 @@ for i in range(startMinima,XspaceMinima):
         Ark = Aleftrightconv[i]
         rho = Variable(XSPACE_DIMENSION)
 
-
         ## constraint: points only from manifold flat inside X
-        objective = Minimize(norm(rho)+norm(np.matrix(Ark)*rho))
+
         mincon.append( np.matrix(Ae)*rho <= be)
 
         ## how many dimensions are there until the linear subspace starts?
@@ -374,66 +419,53 @@ for i in range(startMinima,XspaceMinima):
         for j in range(0,len(constraints)):
                 mincon.append(constraints[j])
 
+        ctr=0
+        ibRho = []
+        for j in range(0,N_walkablesurfaces):
+                W = Wsurfaces_Vstack[j]
+                ibRho_tmp=[]
+                if j>0:
+                        objfunc += norm(x_WS[j][0]-x_WS[j-1][len(x_WS[j-1])-1])
+
+
+                for p in range(0,len(x_WS[j])-1):
+                        objfunc += norm(x_WS[j][p]-x_WS[j][p+1])
+                for p in range(0,len(x_WS[j])):
+                        ibRho_tmp.append(Variable(XSPACE_DIMENSION))
+
+                for p in range(0,len(x_WS[j])):
+                        mincon.append( np.matrix(Ae)*ibRho_tmp[p] <= be)
+                        [a,b,ar,xcur] = pathPlanes[ctr]
+                        ctr+=1
+                        mincon.append(np.matrix(a).T*x_WS[j][p] == b)
+                        for k in range(0,maxNonzeroDim):
+                                vv = x_WS[j][p] + ibRho_tmp[p][k]*ar + heights[k]*v2
+                                mincon.append( np.matrix(W[k][0].A)*vv <= W[k][0].b)
+                                mincon.append( np.matrix(a).T*vv == b)
+                                rhoR = np.matrix(Ark)*ibRho_tmp[p]
+                                vvR = x_WS[j][p] + rhoR[k]*ar + heights[k]*v2
+                                mincon.append( np.matrix(W[k][0].A)*vvR <= W[k][0].b)
+                                mincon.append( np.matrix(a).T*vvR == b)
+
+                ibRho.append(ibRho_tmp)
         ###############################################################################
         # solve
         ###############################################################################
+        objective = Minimize(objfunc)
         prob = Problem(objective, mincon)
-        prob.solve(solver=cvx.SCS)
+        startopt = timer()
+        prob.solve(solver=SCS, use_indirect=True, eps=1e-2)
         print "minima",i,"/",XspaceMinima," => ",prob.value
         allValuesFirst.append(prob.value)
-        if prob.value < inf and prob.value > -inf:
-                ## BICONVEX condition: check second convex problem on feasibility
-                ### constraint: all points have to be inside of an environment box
-                ## inbetween Rho
-                ibRho = []
-                mincon = []
-                objective=[]
-                vp = []
-                for j in range(0,N_walkablesurfaces):
-                        W = Wsurfaces_Vstack[j]
-                        ibRho_tmp=[]
-                        vp_tmp=[]
-                        for p in range(0,len(x_WS[j])):
-                                ibRho_tmp.append(Variable(XSPACE_DIMENSION))
-                                ## vp: normal to tangent at x_WS[j][p]
-                                if p+1<len(x_WS[j]):
-                                        xc = x_WS[j][p].value
-                                        xn = x_WS[j][p+1].value
-                                else:
-                                        xc = x_WS[j][p-1].value
-                                        xn = x_WS[j][p].value
-                                v = xn-xc
-                                v = v/np.linalg.norm(v)
-                                vr = np.dot(rotFromRPY(0,0,pi/2),v)
-                                vp_tmp.append(vr)
-
-                        for p in range(0,len(x_WS[j])):
-                                mincon.append( np.matrix(Ae)*ibRho_tmp[p] <= be)
-                                for k in range(0,maxNonzeroDim):
-                                        vv = x_WS[j][p].value + ibRho_tmp[p][k]*vp_tmp[p] + heights[k]*v2
-                                        mincon.append( np.matrix(W[k][0].A)*vv <= W[k][0].b)
-                                        rhoR = np.matrix(Ark)*ibRho_tmp[p]
-                                        vvR = x_WS[j][p].value + rhoR[k]*vp_tmp[p] + heights[k]*v2
-                                        mincon.append( np.matrix(W[k][0].A)*vvR <= W[k][0].b)
-
-                        ibRho.append(ibRho_tmp)
-                        vp.append(vp_tmp)
-
-                objective = Minimize(norm(ibRho[0][0]))
-                prob = Problem(objective, mincon)
-                prob.solve(solver=cvx.SCS)
-                print "minima",i,"/",XspaceMinima," (2nd cvx problem) => ",prob.value
-
-                allValuesSecond.append(prob.value)
-                if prob.value<inf:
-                        minimaIter = i
-                        print "minima",i,"admits a solution"
-                        if bestMinimaValue > prob.value:
-                                bestMinimaValue = prob.value
-                                bestMinima = i
-                        break
-        else:
-                allValuesSecond.append(prob.value)
+        endopt = timer()
+        ts= np.around(endopt - startopt,2)
+        print "convex problem",i,"took",ts,"s"
+        if prob.value < inf:
+                print "minima",i,"admits a solution"
+                if bestMinimaValue > prob.value:
+                        bestMinimaValue = prob.value
+                        bestMinima = i
+                break
         if i%100==0:
                 end = timer()
                 ts= np.around(end - start,2)
@@ -459,13 +491,10 @@ print "================================================================"
 inf = float('inf')
 
 validMinima = np.sum(np.array(allValuesFirst) < inf)
-validMinimatwo = np.sum(np.array(allValuesSecond) < inf)
 
 pp = float(validMinima)/float(XspaceMinima)
-pptwo = float(validMinimatwo)/float(XspaceMinima)
 
 print validMinima,"of",XspaceMinima,"are valid (",pp*100,"%)"
-print validMinima,"of",XspaceMinima,"second minima are valid (",pptwo*100,"%)"
 print "best minima:",bestMinima,"with value",bestMinimaValue
 
 ###############################################################################
@@ -473,7 +502,7 @@ print "best minima:",bestMinima,"with value",bestMinimaValue
 ###############################################################################
 if prob.value < inf:
         print "plotting workspace swept volume approximation"
-        Ark = Aleftrightconv[minimaIter]
+        Ark = Aleftrightconv[bestMinima]
         rhoR = np.matrix(Ark)*rho.value
         plot.point(x_goal.value,color=(0,0,0,0.9))
         plot.point(x_start.value)
@@ -484,10 +513,11 @@ if prob.value < inf:
         ## plot intersection environment boxes
         for i in range(0,N_walkablesurfaces-1):
                 if x_connection[i].value is not None:
+                        V = Connectors_Vstack[i][0]
                         for k in range(0,maxNonzeroDim):
-                                W = Connectors_Vstack[i][0][k]
+                                VV = V[k]
                                 plot.polytopeFromVertices(\
-                                                W.getVertexRepresentation(),\
+                                                VV.getVertexRepresentation(),\
                                                 fcolor=colorScene)
 
         ### plot paths on each WS
@@ -505,16 +535,18 @@ if prob.value < inf:
                 for i in range(0,N_walkablesurfaces):
                         for j in range(0,len(x_WS[i])):
                                 svPathsMiddle[k][ctr] = x_WS[i][j].value.T
-                                pt = x_WS[i][j].value+(ibRho[i][j][k].value*vp[i][j].T+heights[k]*v2).T
+                                [a,b,ar,xcur] = pathPlanes[ctr]
+
+                                pt = x_WS[i][j].value+(ibRho[i][j][k].value*ar.T+heights[k]*v2).T
                                 svPathsLeft[k][ctr] = np.array(pt).flatten()
                                 ibRhoR = np.matrix(Ark)*ibRho[i][j].value
-                                pt = x_WS[i][j].value+(np.array(ibRhoR[k]).flatten()[0]*vp[i][j].T+heights[k]*v2).T
+                                pt = x_WS[i][j].value+(np.array(ibRhoR[k]).flatten()[0]*ar.T+heights[k]*v2).T
                                 svPathsRight[k][ctr] = np.array(pt).flatten()
                                 ctr = ctr+1 
         ctr=0
         for i in range(0,N_walkablesurfaces):
                 for j in range(0,len(x_WS[i])):
-                        [k,h1,h2,h3] = Harray[minimaIter]
+                        [k,h1,h2,h3] = Harray[bestMinima]
                         thetaV[ctr] = htoq(k,h1,h2,h3)[1]
                         ctr = ctr+1 
 

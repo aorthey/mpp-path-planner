@@ -38,6 +38,7 @@ def getMiddlePathFromIntersectionVertices(m1,m2,n1,n2,W,N):
         ## compute geometrical middle
         p1 = projectPointOntoWalkableSurface(m1, W).flatten().T
         p2 = projectPointOntoWalkableSurface(m2, W).flatten().T
+        print "middle points:",p1,p2
 
         ## set up optimization problem
         constraints = []
@@ -68,6 +69,8 @@ def getMiddlePathFromIntersectionVertices(m1,m2,n1,n2,W,N):
         gamma2 = Variable(1,1)
         constraints.append( x[N-2] == gamma2*n2 + x[N-1] )
 
+        #constraints.append( gamma1 > 0)
+        #constraints.append( gamma2 < 0)
         for i in range(0,N):
                 constraints.append( np.matrix(W.A)*x[i] <= W.b)
                 constraints.append( np.matrix(W.ap)*x[i] == W.bp)
@@ -88,6 +91,7 @@ def getMiddlePathFromIntersectionVertices(m1,m2,n1,n2,W,N):
 
         if prob.value < float('inf'):
                 xout = []
+                print prob.value
                 for i in range(0,N):
                         xout.append(x[i].value)
                 return xout
@@ -107,6 +111,7 @@ def middlePathToHyperplane(X):
                 R = rotFromRPY(0,0,pi/2)
                 ar = np.dot(R,a)
                 hyperplanes.append([a,b,ar,xcur])
+        b = np.dot(xnext.T,a)
         hyperplanes.append([a,b,ar,xnext])
         return hyperplanes
                 
