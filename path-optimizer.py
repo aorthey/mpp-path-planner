@@ -20,6 +20,10 @@ from robot.htoq import *
 from robot.robotspecifications import * 
 from pathplanner.connectorsGetMiddlePath import * 
 from pathplanner.connectorComputeNormal import * 
+
+
+from multiprocessing import Pool
+
 plot=Plotter()
 
 robot_folder = os.environ["MPP_PATH"]+"mpp-robot/output/polytopes"
@@ -35,7 +39,7 @@ G_S = pickle.load( open( env_folder+"/graph.dat", "rb" ) )
 DEBUG=1
 
 start=np.array((-0.5,2.0,0.05))
-goal=np.array((0.0,-2.0,0.05))
+goal=np.array((0.5,-2.0,0.05))
 
 v2 = np.array((0,0,1))
 v1 = np.array((1,0,0))
@@ -146,12 +150,12 @@ N_walkablesurfaces=len(path)
 # building variables
 ###############################################################################
 ## the x positions on the connection between two walkable surfaces
-x_goal = Variable(3,1)
-x_start = Variable(3,1)
-
-x_connection = []
-for i in range(0,N_walkablesurfaces-1):
-        x_connection.append(Variable(3,1))
+#x_goal = Variable(3,1)
+#x_start = Variable(3,1)
+#
+#x_connection = []
+#for i in range(0,N_walkablesurfaces-1):
+#        x_connection.append(Variable(3,1))
 
 ###############################################################################
 ### we have to know the intersection normals, and the normal to those normals
@@ -175,7 +179,6 @@ NdI = distanceInMetersToNumberOfPoints(dI)
 pathPlanes = []
 W=Wsurfaces[0]
 Xmiddle = getMiddlePathStart(start,Connectors[0][0],startNormal,connectorNormal[0],W,NdI)
-print Xmiddle[0],Xmiddle[-1]
 
 pathPlanesStart = middlePathToHyperplane(Xmiddle)
 
@@ -194,7 +197,6 @@ for i in range(0,N_c-1):
         W=Wsurfaces[i+1]
         Xmiddle = getMiddlePath(C,Cnext,connectorNormal[i],connectorNormal[i+1],W,Ndcc)
         pathPlanesConnector.append( middlePathToHyperplane(Xmiddle) )
-        print Xmiddle[0],Xmiddle[-1]
 
 for i in range(0,len(pathPlanesConnector)):
         for j in range(0,len(pathPlanesConnector[i])):
@@ -206,12 +208,12 @@ M_w.append(Ndg)
 
 W=Wsurfaces[len(path)-1]
 Xmiddle = getMiddlePathGoal(Connectors[N_c-1][0],goal,connectorNormal[N_c-1],goalNormal,W,Ndg)
-print Xmiddle[0],Xmiddle[-1]
 pathPlanesGoal = middlePathToHyperplane(Xmiddle)
 
 for i in range(0,len(pathPlanesGoal)):
         pathPlanes.append(pathPlanesGoal[i])
 
+print "computed middle paths"
 ###############################################################################
 ## DEBUG plot
 xx = (start.T+np.array((0,0,0.1))).T
@@ -226,7 +228,6 @@ for i in range(0,N_walkablesurfaces):
 
 ctr=0
 for i in range(0,N_walkablesurfaces):
-        print "surface",i
         for j in range(0,M_w[i]):
                 [a,b,ar,xcur]=pathPlanes[ctr]
                 l1 = xcur-0.5*ar
@@ -244,176 +245,60 @@ for i in range(len(Wsurfaces)):
         plot.walkableSurface( V,\
                         fcolor=((0.2,0.2,0.2,0.5)), thickness=0.01)
 
-#plot.show()
-#sys.exit(0)
 ###############################################################################
 # building constraints
 ###############################################################################
-constraints = []
-objfunc = 0
+from pathplanner.cvxConstraintFactory import CVXConstraintFactory
+Cfactory = CVXConstraintFactory(N_walkablesurfaces)
+Cfactory.addDistanceBetweenFootpoints(x_WS)
+Cfactory.addStartPosFootpoint(x_WS,start,Wsurfaces)
+Cfactory.addGoalPosFootpoint(x_WS,goal,Wsurfaces)
+Cfactory.addFootpointOnSurfaceConstraint(x_WS, Wsurfaces)
+Cfactory.addConnectionConstraintsOnFootpoints(x_WS, Connectors)
+Cfactory.addMiddlePathHyperplaneOnFootpoints(x_WS, pathPlanes)
+Cfactory.addStartNormalConstraint(x_WS, startNormal)
+Cfactory.addGoalNormalConstraint(x_WS, goalNormal)
+Cfactory.addConnectorNormalConstraints(x_WS, connectorNormal)
 
-## start/goal regions constraints
-constraints.append(norm(x_start - start) <= PATH_RADIUS_START_REGION)
-constraints.append(norm(x_goal - goal) <= PATH_RADIUS_GOAL_REGION)
-
-W=Wsurfaces[0]
-constraints.append( np.matrix(W.A)*x_start <= W.b )
-constraints.append( np.matrix(W.ap)*x_start == W.bp)
-W=Wsurfaces[len(path)-1]
-constraints.append( np.matrix(W.A)*x_goal <= W.b )
-constraints.append( np.matrix(W.ap)*x_goal == W.bp)
-
-###############################################################################
-for i in range(0,N_walkablesurfaces-1):
-        ### constraints for points on the connection of the WS
-        C = Connectors[i][0]
-        y = x_connection[i]
-        constraints.append( np.matrix(C.A)*y <= C.b )
-        constraints.append( np.matrix(C.ap)*y == C.bp)
-
-###############################################################################
-for i in range(0,N_walkablesurfaces):
-        #### x_WS should contain only points on the surface
-        W=Wsurfaces[i]
-        plot.walkableSurface( \
-                        W.getVertexRepresentation(),\
-                        fcolor=colorScene,\
-                        thickness=0.01)
-        for j in range(0,M_w[i]):
-                constraints.append( np.matrix(W.A)*x_WS[i][j] <= W.b)
-                constraints.append( np.matrix(W.ap)*x_WS[i][j] == W.bp)
-
-###############################################################################
-ctr=0
-for i in range(0,N_walkablesurfaces):
-        ### constraints for points being on the hyperplanes of the middle path
-        for j in range(0,len(x_WS[i])):
-                [a,b,ar,xcur] = pathPlanes[ctr]
-                constraints.append(np.matrix(a).T*x_WS[i][j] == b)
-                ctr+=1
-
-###############################################################################
-### constraint: x_WS should lie in the same functional space
-
-M = 100
-t = np.linspace(0,1,M)
-F = Fpoly(t)
-for i in range(0,N_walkablesurfaces):
-        ### constraints for points being on the hyperplanes of the middle path
-        N = len(x_WS[i])
-        Fweight = Variable(M,3)
-        if N >= M:
-                print "functional space not big enough",M,"<",N
-                sys.exit(0)
-
-        for j in range(0,N):
-                constraints.append( x_WS[i][j] == Fweight.T*F[j] )
-
-        objfunc += norm(Fweight)
-
-###############################################################################
-### constraint: x_WS connections on connectors
-constraints.append( x_WS[0][0] == x_start)
-constraints.append( x_WS[0][M_w[0]-1] == x_connection[0])
-
-for i in range(1,N_walkablesurfaces-1):
-        Lws = len(x_WS[i])-1
-        constraints.append( x_WS[i][0] == x_connection[i-1])
-        constraints.append( x_WS[i][Lws] == x_connection[i])
-
-Lws = len(x_WS[N_walkablesurfaces-1])-1
-constraints.append( x_WS[N_walkablesurfaces-1][0] == x_connection[N_walkablesurfaces-2])
-constraints.append( x_WS[N_walkablesurfaces-1][Lws] == x_goal)
-
-## catch the imprecision of the previous cvx solver
-#precision = 0.001
-#constraints.append( norm(x_WS[0][0] - x_start) <= precision)
-#constraints.append( norm(x_WS[0][M_w[0]-1] - x_connection[0]) <= precision)
-#
-#for i in range(1,N_walkablesurfaces-1):
-#        Lws = len(x_WS[i])-1
-#        constraints.append( norm(x_WS[i][0] - x_connection[i-1]) <= precision)
-#        constraints.append( norm(x_WS[i][Lws] - x_connection[i]) <= precision)
-#
-#Lws = len(x_WS[N_walkablesurfaces-1])-1
-#constraints.append( norm(x_WS[N_walkablesurfaces-1][0] - x_connection[N_walkablesurfaces-2]) <= precision)
-#constraints.append( norm(x_WS[N_walkablesurfaces-1][Lws] - x_goal) <= precision)
-
-###############################################################################
-### constraint: distance between x_WS
-for i in range(0,N_walkablesurfaces):
-        for j in range(1,len(x_WS[i])):
-                constraints.append(norm(x_WS[i][j] - x_WS[i][j-1]) <= PATH_DIST_WAYPOINTS_MAX)
-
-###############################################################################
-### constraint: x_WS before the intersection should have the same orientation as
-### the intersection
-
-for i in range(0,N_walkablesurfaces-1):
-        v = connectorNormal[i]
-        Lws = len(x_WS[i])-1
-        ## trois points: x before the intersection, x at the intersection and x
-        ## after the intersection. They all should lie on a line perpendicular to
-        ## the normalnormal of the intersection
-        xbefore = x_WS[i][Lws-1]
-        xconnect = x_WS[i+1][0]
-        xafter = x_WS[i+1][1]
-
-        gammaA = Variable(1)
-        gammaB = Variable(1)
-        constraints.append( gammaA*v + xconnect == xafter )
-        constraints.append( gammaB*v + xconnect == xbefore )
-
-###############################################################################
-### constraint: the first point after start should have same orientation as start
-v = startNormal
-xnext = x_WS[0][1]
-gammaStart = Variable(1)
-constraints.append( gammaStart*v + x_WS[0][0] == xnext )
-
-### constraint: the first point before goal should have same orientation as goal
-v = goalNormal
-N = len(x_WS)
-M = len(x_WS[N-1])
-xbefore = x_WS[N-1][M-2]
-xgoal = x_WS[N-1][M-1]
-
-gammaGoal = Variable(1)
-constraints.append( gammaGoal*v + xgoal == xbefore )
-
-
+constraints = Cfactory.getConstraints()
+print Cfactory
 ###############################################################################
 # building objective
 ###############################################################################
-startMinima = 27
+startMinima = 8
 
 allValuesFirst = []
 
 start = timer()
 bestMinima = 0
 bestMinimaValue = inf
-for i in range(startMinima,XspaceMinima):
+
+def solveMinima(i):
+#for i in range(startMinima,XspaceMinima):
+        print "starting minima",i,"/",XspaceMinima,"..."
         Ae = Aflat[i]
         be = bflat[i]
         mincon = []
         Ark = Aleftrightconv[i]
-        rho = Variable(XSPACE_DIMENSION)
 
-        ## constraint: points only from manifold flat inside X
-
-        mincon.append( np.matrix(Ae)*rho <= be)
+        rho=[]
+        for j in range(0,N_walkablesurfaces-1):
+                rho.append(Variable(XSPACE_DIMENSION))
 
         ## how many dimensions are there until the linear subspace starts?
         maxNonzeroDim = np.max(np.nonzero(Ark)[0])
 
         ## constraint: all intersection points have to be inside of an environment box
         for j in range(0,N_walkablesurfaces-1):
+                ## constraint: points only from manifold flat inside X
+                mincon.append( np.matrix(Ae)*rho[j] <= be)
                 Ebox = Connectors_Vstack[j][0]
+                xj = x_WS[j+1][0]
                 for k in range(0,maxNonzeroDim):
-                        vv = x_connection[j] + rho[k]*v1 + heights[k]*v2
+                        vv = xj + rho[j][k]*v1 + heights[k]*v2
                         mincon.append( np.matrix(Ebox[k].A)*vv <= Ebox[k].b)
-                        rhoR = np.matrix(Ark)*rho
-                        vvR = x_connection[j] + rhoR[k]*v1 + heights[k]*v2
+                        rhoR = np.matrix(Ark)*rho[j]
+                        vvR = xj + rhoR[k]*v1 + heights[k]*v2
                         mincon.append( np.matrix(Ebox[k].A)*vvR <= Ebox[k].b)
 
         for j in range(0,len(constraints)):
@@ -421,6 +306,7 @@ for i in range(startMinima,XspaceMinima):
 
         ctr=0
         ibRho = []
+        objfunc = 0
         for j in range(0,N_walkablesurfaces):
                 W = Wsurfaces_Vstack[j]
                 ibRho_tmp=[]
@@ -454,29 +340,24 @@ for i in range(startMinima,XspaceMinima):
         objective = Minimize(objfunc)
         prob = Problem(objective, mincon)
         startopt = timer()
-        prob.solve(solver=SCS, use_indirect=True, eps=1e-2)
-        print "minima",i,"/",XspaceMinima," => ",prob.value
+        #prob.solve(solver=SCS, use_indirect=True, eps=1e-2, verbose=True)
+        prob.solve(solver=SCS, eps=1e-3)
         allValuesFirst.append(prob.value)
+        ###############################################################################
+        # output
+        ###############################################################################
         endopt = timer()
         ts= np.around(endopt - startopt,2)
-        print "convex problem",i,"took",ts,"s"
-        if prob.value < inf:
-                print "minima",i,"admits a solution"
-                if bestMinimaValue > prob.value:
-                        bestMinimaValue = prob.value
-                        bestMinima = i
-                break
-        if i%100==0:
-                end = timer()
-                ts= np.around(end - start,2)
-                validMinima = np.sum(np.array(allValuesFirst) < inf)
-                print "================================================================"
-                print "Time elapsed after checking",i,"minima:"
-                print ts,"s"
-                print "(",validMinima,"valid minima found so far)"
-                print "================================================================"
+        tstotal= np.around(endopt - start,2)
+        validMinima = np.sum(np.array(allValuesFirst) < inf)
+        print "minima",i,"/",XspaceMinima," => ",prob.value,"(time:",ts,"s)"
+        return prob.value
 
+pool = Pool(processes = 8)
+minimaArray = np.arange(0,XspaceMinima)
+minimaArray = [45]
 
+outputValues = pool.map(solveMinima, minimaArray)
 end = timer()
 ts= np.around(end - start,2)
 
@@ -490,20 +371,25 @@ print "================================================================"
 ###############################################################################
 inf = float('inf')
 
-validMinima = np.sum(np.array(allValuesFirst) < inf)
+validMinima = np.sum(np.array(outputValues) < inf)
 
 pp = float(validMinima)/float(XspaceMinima)
+
+bestMinima = np.argmin(outputValues)
+bestMinimaValue = np.min(outputValues)
+bestMinima = minimaArray[bestMinima]
 
 print validMinima,"of",XspaceMinima,"are valid (",pp*100,"%)"
 print "best minima:",bestMinima,"with value",bestMinimaValue
 
+solveMinima(bestMinima)
+
 ###############################################################################
 # plot
 ###############################################################################
-if prob.value < inf:
+if bestMinimaValue < inf:
         print "plotting workspace swept volume approximation"
         Ark = Aleftrightconv[bestMinima]
-        rhoR = np.matrix(Ark)*rho.value
         plot.point(x_goal.value,color=(0,0,0,0.9))
         plot.point(x_start.value)
         maxNonzeroDim = np.max(np.nonzero(Ark)[0])
@@ -512,13 +398,13 @@ if prob.value < inf:
 
         ## plot intersection environment boxes
         for i in range(0,N_walkablesurfaces-1):
-                if x_connection[i].value is not None:
-                        V = Connectors_Vstack[i][0]
-                        for k in range(0,maxNonzeroDim):
-                                VV = V[k]
-                                plot.polytopeFromVertices(\
-                                                VV.getVertexRepresentation(),\
-                                                fcolor=colorScene)
+                V = Connectors_Vstack[i][0]
+                Nstack = Connectors_Vstack[i][1]
+                for k in range(0,Nstack):
+                        VV = V[k]
+                        plot.polytopeFromVertices(\
+                                        VV.getVertexRepresentation(),\
+                                        fcolor=colorScene)
 
         ### plot paths on each WS
         ###  build one path for each dimension:
@@ -558,7 +444,6 @@ if prob.value < inf:
         svRightFname =   output_folder+"/xpathR.dat"
         svMiddleFname =  output_folder+"/xpathM.dat"
         svQValuesFname = output_folder+"/xpathQ.dat"
-
 
         pickle.dump( svPathsLeft, open( svLeftFname, "wb" ) )
         pickle.dump( svPathsRight, open( svRightFname, "wb" ) )

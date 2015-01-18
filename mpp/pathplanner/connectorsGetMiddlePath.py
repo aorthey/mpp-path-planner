@@ -32,13 +32,11 @@ def getMiddlePathGoal(I1,p2,n1,n2,W,N):
         m1 = getMeanFromVerticesList(V1).flatten()
         return getMiddlePathFromIntersectionVertices(m1,p2,n1,n2,W,N)
 
-
 def getMiddlePathFromIntersectionVertices(m1,m2,n1,n2,W,N):
         VW = W.getVertexRepresentation()
         ## compute geometrical middle
         p1 = projectPointOntoWalkableSurface(m1, W).flatten().T
         p2 = projectPointOntoWalkableSurface(m2, W).flatten().T
-        print "middle points:",p1,p2
 
         ## set up optimization problem
         constraints = []
