@@ -190,87 +190,92 @@ print Ofactory
 # solving problem
 ###############################################################################
 start = timer()
-bestMinima = 0
-bestMinimaValue = inf
 
-def solveMinima(i):
-        print "starting minima",i,"/",XspaceMinima,"..."
-        Ae = Aflat[i]
-        be = bflat[i]
-        mincon = []
-        Ark = Aleftrightconv[i]
+rho=[]
+ibRho = []
 
-        rho=[]
-        for j in range(0,N_walkablesurfaces-1):
-                rho.append(Variable(XSPACE_DIMENSION))
 
-        ## how many dimensions are there until the linear subspace starts?
-        maxNonzeroDim = np.max(np.nonzero(Ark)[0])
+#def solveMinima(i):
+i = 45
+print "starting minima",i,"/",XspaceMinima,"..."
+Ae = Aflat[i]
+be = bflat[i]
+mincon = []
+Ark = Aleftrightconv[i]
 
-        ## constraint: all intersection points have to be inside of an environment box
-        for j in range(0,N_walkablesurfaces-1):
-                ## constraint: points only from manifold flat inside X
-                mincon.append( np.matrix(Ae)*rho[j] <= be)
-                Ebox = Connectors_Vstack[j][0]
-                xj = x_WS[j+1][0]
+rho=[]
+for j in range(0,N_walkablesurfaces-1):
+        rho.append(Variable(XSPACE_DIMENSION))
+
+## how many dimensions are there until the linear subspace starts?
+maxNonzeroDim = np.max(np.nonzero(Ark)[0])
+
+## constraint: all intersection points have to be inside of an environment box
+for j in range(0,N_walkablesurfaces-1):
+        ## constraint: points only from manifold flat inside X
+        mincon.append( np.matrix(Ae)*rho[j] <= be)
+        Ebox = Connectors_Vstack[j][0]
+        xj = x_WS[j+1][0]
+        for k in range(0,maxNonzeroDim):
+                vv = xj + rho[j][k]*v1 + heights[k]*v2
+                mincon.append( np.matrix(Ebox[k].A)*vv <= Ebox[k].b)
+                rhoR = np.matrix(Ark)*rho[j]
+                vvR = xj + rhoR[k]*v1 + heights[k]*v2
+                mincon.append( np.matrix(Ebox[k].A)*vvR <= Ebox[k].b)
+
+for j in range(0,len(constraints)):
+        mincon.append(constraints[j])
+
+ctr=0
+ibRho = []
+
+for j in range(0,N_walkablesurfaces):
+        W = Wsurfaces_Vstack[j]
+        ibRho_tmp=[]
+
+        for p in range(0,len(x_WS[j])):
+                ibRho_tmp.append(Variable(XSPACE_DIMENSION))
+
+        for p in range(0,len(x_WS[j])):
+                mincon.append( np.matrix(Ae)*ibRho_tmp[p] <= be)
+                [a,b,ar,xcur] = pathPlanes[j][p]
+                ctr+=1
+                mincon.append(np.matrix(a).T*x_WS[j][p] == b)
                 for k in range(0,maxNonzeroDim):
-                        vv = xj + rho[j][k]*v1 + heights[k]*v2
-                        mincon.append( np.matrix(Ebox[k].A)*vv <= Ebox[k].b)
-                        rhoR = np.matrix(Ark)*rho[j]
-                        vvR = xj + rhoR[k]*v1 + heights[k]*v2
-                        mincon.append( np.matrix(Ebox[k].A)*vvR <= Ebox[k].b)
+                        vv = x_WS[j][p] + ibRho_tmp[p][k]*ar + heights[k]*v2
+                        mincon.append( np.matrix(W[k][0].A)*vv <= W[k][0].b)
+                        mincon.append( np.matrix(a).T*vv == b)
+                        rhoR = np.matrix(Ark)*ibRho_tmp[p]
+                        vvR = x_WS[j][p] + rhoR[k]*ar + heights[k]*v2
+                        mincon.append( np.matrix(W[k][0].A)*vvR <= W[k][0].b)
+                        mincon.append( np.matrix(a).T*vvR == b)
 
-        for j in range(0,len(constraints)):
-                mincon.append(constraints[j])
-
-        ctr=0
-        ibRho = []
-
-        for j in range(0,N_walkablesurfaces):
-                W = Wsurfaces_Vstack[j]
-                ibRho_tmp=[]
-
-                for p in range(0,len(x_WS[j])):
-                        ibRho_tmp.append(Variable(XSPACE_DIMENSION))
-
-                for p in range(0,len(x_WS[j])):
-                        mincon.append( np.matrix(Ae)*ibRho_tmp[p] <= be)
-                        [a,b,ar,xcur] = pathPlanes[j][p]
-                        ctr+=1
-                        mincon.append(np.matrix(a).T*x_WS[j][p] == b)
-                        for k in range(0,maxNonzeroDim):
-                                vv = x_WS[j][p] + ibRho_tmp[p][k]*ar + heights[k]*v2
-                                mincon.append( np.matrix(W[k][0].A)*vv <= W[k][0].b)
-                                mincon.append( np.matrix(a).T*vv == b)
-                                rhoR = np.matrix(Ark)*ibRho_tmp[p]
-                                vvR = x_WS[j][p] + rhoR[k]*ar + heights[k]*v2
-                                mincon.append( np.matrix(W[k][0].A)*vvR <= W[k][0].b)
-                                mincon.append( np.matrix(a).T*vvR == b)
-
-                ibRho.append(ibRho_tmp)
-        ###############################################################################
-        # solve
-        ###############################################################################
-        objective = Minimize(objfunc)
-        prob = Problem(objective, mincon)
-        startopt = timer()
-        #prob.solve(solver=SCS, use_indirect=True, eps=1e-2, verbose=True)
-        prob.solve(solver=SCS, eps=1e-3)
-        ###############################################################################
-        # output
-        ###############################################################################
-        endopt = timer()
-        ts= np.around(endopt - startopt,2)
-        tstotal= np.around(endopt - start,2)
-        print "minima",i,"/",XspaceMinima," => ",prob.value,"(time:",ts,"s)"
-        return prob.value
+        ibRho.append(ibRho_tmp)
+###############################################################################
+# solve
+###############################################################################
+objective = Minimize(objfunc)
+prob = Problem(objective, mincon)
+startopt = timer()
+#prob.solve(solver=SCS, use_indirect=True, eps=1e-2, verbose=True)
+prob.solve(solver=SCS, eps=1e-3)
+###############################################################################
+# output
+###############################################################################
+endopt = timer()
+ts= np.around(endopt - startopt,2)
+tstotal= np.around(endopt - start,2)
+print "minima",i,"/",XspaceMinima," => ",prob.value,"(time:",ts,"s)"
+bestMinima = i
+bestMinimaValue = prob.value
+#return prob.value
 
 #pool = Pool(processes = 8)
 #minimaArray = np.arange(0,XspaceMinima)
-minimaArray = [45]
+#minimaArray = [45]
 
 #outputValues = pool.map(solveMinima, minimaArray)
-outputValues = solveMinima(45)
+#outputValues = solveMinima(45)
 end = timer()
 ts= np.around(end - start,2)
 
@@ -283,19 +288,19 @@ print "================================================================"
 # statistics
 ###############################################################################
 inf = float('inf')
-
-validMinima = np.sum(np.array(outputValues) < inf)
-
-pp = float(validMinima)/float(XspaceMinima)
-
-bestMinima = np.argmin(outputValues)
-bestMinimaValue = np.min(outputValues)
-bestMinima = minimaArray[bestMinima]
-
-print validMinima,"of",XspaceMinima,"are valid (",pp*100,"%)"
-print "best minima:",bestMinima,"with value",bestMinimaValue
-
-solveMinima(bestMinima)
+#
+#validMinima = np.sum(np.array(outputValues) < inf)
+#
+#pp = float(validMinima)/float(XspaceMinima)
+#
+#bestMinima = np.argmin(outputValues)
+#bestMinimaValue = np.min(outputValues)
+#bestMinima = minimaArray[bestMinima]
+#
+#print validMinima,"of",XspaceMinima,"are valid (",pp*100,"%)"
+#print "best minima:",bestMinima,"with value",bestMinimaValue
+#
+#solveMinima(bestMinima)
 
 ###############################################################################
 # plot
