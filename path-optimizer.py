@@ -20,24 +20,15 @@ from robot.htoq import *
 from robot.robotspecifications import * 
 from pathplanner.connectorsGetMiddlePath import * 
 from pathplanner.connectorComputeNormal import * 
+from pathplanner.surfaceMiddlePath import * 
+
+#from multiprocessing import Pool
 
 
-from multiprocessing import Pool
-
-plot=Plotter()
-
-robot_folder = os.environ["MPP_PATH"]+"mpp-robot/output/polytopes"
-env_folder = os.environ["MPP_PATH"]+"mpp-environment/output"
-
-#path_candidates = pickle.load( open( env_folder+"/paths.dat", "rb" ) )
-Wsurfaces_candidates = pickle.load( open( env_folder+"/wsurfaces.dat", "rb" ) )
-Wsurfaces_Vstack_candidates = pickle.load( open( env_folder+"/wsurfaces_vstack.dat", "rb" ) )
-Connector_candidates= pickle.load( open( env_folder+"/connector.dat", "rb" ) )
-Connector_Vstack_candidates= pickle.load( open( env_folder+"/connector_vstack.dat", "rb" ) )
-G_S = pickle.load( open( env_folder+"/graph.dat", "rb" ) )
-
+###############################################################################
+# changeable parameters and start/goal configs
+###############################################################################
 DEBUG=1
-
 start=np.array((-0.5,2.0,0.05))
 goal=np.array((0.5,-2.0,0.05))
 
@@ -53,6 +44,21 @@ svPointSize=50
 ### start/goal direction
 startNormal = np.array((1,-1,0))
 goalNormal = np.array((0,-1,0))
+
+###############################################################################
+# preloading
+###############################################################################
+plot=Plotter()
+robot_folder = os.environ["MPP_PATH"]+"mpp-robot/output/polytopes"
+env_folder = os.environ["MPP_PATH"]+"mpp-environment/output"
+
+#path_candidates = pickle.load( open( env_folder+"/paths.dat", "rb" ) )
+Wsurfaces_candidates = pickle.load( open( env_folder+"/wsurfaces.dat", "rb" ) )
+Wsurfaces_Vstack_candidates = pickle.load( open( env_folder+"/wsurfaces_vstack.dat", "rb" ) )
+Connector_candidates= pickle.load( open( env_folder+"/connector.dat", "rb" ) )
+Connector_Vstack_candidates= pickle.load( open( env_folder+"/connector_vstack.dat", "rb" ) )
+G_S = pickle.load( open( env_folder+"/graph.dat", "rb" ) )
+
 startNormalNormal = np.dot(rotFromRPY(0,0,pi/2),startNormal)
 goalNormalNormal = np.dot(rotFromRPY(0,0,pi/2),goalNormal)
 
@@ -147,108 +153,19 @@ for i in range(0,len(Connectors)):
 N_walkablesurfaces=len(path)
 
 ###############################################################################
-# building variables
+# obtaining middle path
 ###############################################################################
-## the x positions on the connection between two walkable surfaces
-#x_goal = Variable(3,1)
-#x_start = Variable(3,1)
-#
-#x_connection = []
-#for i in range(0,N_walkablesurfaces-1):
-#        x_connection.append(Variable(3,1))
 
-###############################################################################
-### we have to know the intersection normals, and the normal to those normals
-connectorNormalNormal = []
-connectorNormal= []
-for i in range(0,N_walkablesurfaces-1):
-        I = Connectors[i][0]
-        [n,nn]=computeNormalFromIntersection(I)
-        connectorNormalNormal.append(nn)
-        connectorNormal.append(n)
-
-###############################################################################
-## compute number of points per walkable surface, depending on the distance to
-## the next connector segment
-M_w = []
-
-N_c = len(Connectors)
-dI = distancePointWalkableSurface(start, Connectors[0][0])
-NdI = distanceInMetersToNumberOfPoints(dI)
-
-pathPlanes = []
-W=Wsurfaces[0]
-Xmiddle = getMiddlePathStart(start,Connectors[0][0],startNormal,connectorNormal[0],W,NdI)
-
-pathPlanesStart = middlePathToHyperplane(Xmiddle)
-
-for i in range(0,len(Xmiddle)):
-        pathPlanes.append(pathPlanesStart[i])
-
-M_w.append(NdI)
-pathPlanesConnector = []
-
-for i in range(0,N_c-1):
-        C = Connectors[i][0]
-        Cnext = Connectors[i+1][0]
-        dcc = distanceWalkableSurfaceWalkableSurface(C,Cnext)
-        Ndcc = distanceInMetersToNumberOfPoints(dcc)
-        M_w.append(Ndcc)
-        W=Wsurfaces[i+1]
-        Xmiddle = getMiddlePath(C,Cnext,connectorNormal[i],connectorNormal[i+1],W,Ndcc)
-        pathPlanesConnector.append( middlePathToHyperplane(Xmiddle) )
-
-for i in range(0,len(pathPlanesConnector)):
-        for j in range(0,len(pathPlanesConnector[i])):
-                pathPlanes.append(pathPlanesConnector[i][j])
-
-dG = distancePointWalkableSurface(goal, Connectors[N_c-1][0])
-Ndg = distanceInMetersToNumberOfPoints(dG)
-M_w.append(Ndg)
-
-W=Wsurfaces[len(path)-1]
-Xmiddle = getMiddlePathGoal(Connectors[N_c-1][0],goal,connectorNormal[N_c-1],goalNormal,W,Ndg)
-pathPlanesGoal = middlePathToHyperplane(Xmiddle)
-
-for i in range(0,len(pathPlanesGoal)):
-        pathPlanes.append(pathPlanesGoal[i])
-
-print "computed middle paths"
-###############################################################################
-## DEBUG plot
-xx = (start.T+np.array((0,0,0.1))).T
-plot.point(xx,color=(0,0,0,1))
-x_WS = []
-for i in range(0,N_walkablesurfaces):
-        print "WS ",i,"has",M_w[i],"points to optimize"
-        x_WS_tmp = []
-        for j in range(0,M_w[i]):
-                x_WS_tmp.append(Variable(3,1))
-        x_WS.append(x_WS_tmp)
-
-ctr=0
-for i in range(0,N_walkablesurfaces):
-        for j in range(0,M_w[i]):
-                [a,b,ar,xcur]=pathPlanes[ctr]
-                l1 = xcur-0.5*ar
-                l2 = xcur+0.5*ar
-                l3 = xcur
-                L = np.array([l1,l2,l3])
-                plot.point(l1)
-                plot.point(l2,color=(1,0,1,1))
-                plot.point(l3,color=(0,0,0,1))
-                plot.line(L,lw=0.3)
-                ctr=ctr+1
-
-for i in range(len(Wsurfaces)):
-        V = Wsurfaces[i].getVertexRepresentation()
-        plot.walkableSurface( V,\
-                        fcolor=((0.2,0.2,0.2,0.5)), thickness=0.01)
+pathPlanes = getSurfaceMiddlePathPlanes(start, startNormal, goal, goalNormal, Wsurfaces, Connectors)
+#plotMiddlePath(plot, pathPlanes)
+x_WS = pathPlanesToCVXfootVariables(pathPlanes)
 
 ###############################################################################
 # building constraints
 ###############################################################################
 from pathplanner.cvxConstraintFactory import CVXConstraintFactory
+from pathplanner.cvxObjectiveFactory import CVXObjectiveFactory
+
 Cfactory = CVXConstraintFactory(N_walkablesurfaces)
 Cfactory.addDistanceBetweenFootpoints(x_WS)
 Cfactory.addStartPosFootpoint(x_WS,start,Wsurfaces)
@@ -258,23 +175,25 @@ Cfactory.addConnectionConstraintsOnFootpoints(x_WS, Connectors)
 Cfactory.addMiddlePathHyperplaneOnFootpoints(x_WS, pathPlanes)
 Cfactory.addStartNormalConstraint(x_WS, startNormal)
 Cfactory.addGoalNormalConstraint(x_WS, goalNormal)
-Cfactory.addConnectorNormalConstraints(x_WS, connectorNormal)
-
 constraints = Cfactory.getConstraints()
 print Cfactory
-###############################################################################
-# building objective
-###############################################################################
-startMinima = 8
 
-allValuesFirst = []
+###############################################################################
+# building objective function
+###############################################################################
+Ofactory = CVXObjectiveFactory()
+Ofactory.addInterpointMinimization(x_WS)
+objfunc = Ofactory.getObjectiveFunction()
+print Ofactory
 
+###############################################################################
+# solving problem
+###############################################################################
 start = timer()
 bestMinima = 0
 bestMinimaValue = inf
 
 def solveMinima(i):
-#for i in range(startMinima,XspaceMinima):
         print "starting minima",i,"/",XspaceMinima,"..."
         Ae = Aflat[i]
         be = bflat[i]
@@ -306,22 +225,17 @@ def solveMinima(i):
 
         ctr=0
         ibRho = []
-        objfunc = 0
+
         for j in range(0,N_walkablesurfaces):
                 W = Wsurfaces_Vstack[j]
                 ibRho_tmp=[]
-                if j>0:
-                        objfunc += norm(x_WS[j][0]-x_WS[j-1][len(x_WS[j-1])-1])
 
-
-                for p in range(0,len(x_WS[j])-1):
-                        objfunc += norm(x_WS[j][p]-x_WS[j][p+1])
                 for p in range(0,len(x_WS[j])):
                         ibRho_tmp.append(Variable(XSPACE_DIMENSION))
 
                 for p in range(0,len(x_WS[j])):
                         mincon.append( np.matrix(Ae)*ibRho_tmp[p] <= be)
-                        [a,b,ar,xcur] = pathPlanes[ctr]
+                        [a,b,ar,xcur] = pathPlanes[j][p]
                         ctr+=1
                         mincon.append(np.matrix(a).T*x_WS[j][p] == b)
                         for k in range(0,maxNonzeroDim):
@@ -342,22 +256,21 @@ def solveMinima(i):
         startopt = timer()
         #prob.solve(solver=SCS, use_indirect=True, eps=1e-2, verbose=True)
         prob.solve(solver=SCS, eps=1e-3)
-        allValuesFirst.append(prob.value)
         ###############################################################################
         # output
         ###############################################################################
         endopt = timer()
         ts= np.around(endopt - startopt,2)
         tstotal= np.around(endopt - start,2)
-        validMinima = np.sum(np.array(allValuesFirst) < inf)
         print "minima",i,"/",XspaceMinima," => ",prob.value,"(time:",ts,"s)"
         return prob.value
 
-pool = Pool(processes = 8)
-minimaArray = np.arange(0,XspaceMinima)
+#pool = Pool(processes = 8)
+#minimaArray = np.arange(0,XspaceMinima)
 minimaArray = [45]
 
-outputValues = pool.map(solveMinima, minimaArray)
+#outputValues = pool.map(solveMinima, minimaArray)
+outputValues = solveMinima(45)
 end = timer()
 ts= np.around(end - start,2)
 
@@ -390,6 +303,10 @@ solveMinima(bestMinima)
 if bestMinimaValue < inf:
         print "plotting workspace swept volume approximation"
         Ark = Aleftrightconv[bestMinima]
+        N = len(x_WS)
+        M = len(x_WS[N-1])
+        x_goal = x_WS[N-1][M-1]
+        x_start = x_WS[0][0]
         plot.point(x_goal.value,color=(0,0,0,0.9))
         plot.point(x_start.value)
         maxNonzeroDim = np.max(np.nonzero(Ark)[0])
@@ -421,7 +338,7 @@ if bestMinimaValue < inf:
                 for i in range(0,N_walkablesurfaces):
                         for j in range(0,len(x_WS[i])):
                                 svPathsMiddle[k][ctr] = x_WS[i][j].value.T
-                                [a,b,ar,xcur] = pathPlanes[ctr]
+                                [a,b,ar,xcur] = pathPlanes[i][j]
 
                                 pt = x_WS[i][j].value+(ibRho[i][j][k].value*ar.T+heights[k]*v2).T
                                 svPathsLeft[k][ctr] = np.array(pt).flatten()
