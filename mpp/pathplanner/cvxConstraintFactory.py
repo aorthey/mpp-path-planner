@@ -64,6 +64,13 @@ class CVXConstraintFactory:
                                 self.constraints.append( np.matrix(Wcur.ap)*x_WS[i][j] == Wcur.bp)
                                 ctr+=2
                 self.constraintNames.append("footpoint on walkable surfaces ("+str(ctr)+" constraints)")
+        def addConnectorVstackConstraint(self, X, CVstack):
+                V=CVstack
+                for i in range(0,len(X)):
+                        self.constraints.append( np.matrix(V[i].A)*X[i] <= V[i].b )
+
+                self.constraintNames.append("vstack connector constraint ("+str(len(X))+" constraints)")
+
         def addConnectionConstraintsOnFootpoints(self, x_WS, Connectors):
                 ctr = 0
                 for i in range(0,len(x_WS)-1):

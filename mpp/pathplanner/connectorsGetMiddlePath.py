@@ -64,9 +64,23 @@ def getMiddlePathFromIntersectionVertices(m1,m2,n1,n2,W,N):
         ###############################################################################
         gamma1 = Variable(1,1)
         constraints.append( x[1] == gamma1*n1 + x[0] )
+
         gamma2 = Variable(1,1)
         constraints.append( x[N-2] == gamma2*n2 + x[N-1] )
 
+        if N>8:
+                gamma3 = Variable(1,1)
+                gamma4 = Variable(1,1)
+                gamma5 = Variable(1,1)
+                gamma6 = Variable(1,1)
+                gamma7 = Variable(1,1)
+                gamma8 = Variable(1,1)
+                constraints.append( x[2] == gamma3*n1 + x[0] )
+                constraints.append( x[3] == gamma4*n1 + x[0] )
+                constraints.append( x[4] == gamma5*n1 + x[0] )
+                constraints.append( x[N-3] == gamma6*n2 + x[N-1] )
+                constraints.append( x[N-4] == gamma7*n2 + x[N-1] )
+                constraints.append( x[N-5] == gamma8*n2 + x[N-1] )
         #constraints.append( gamma1 > 0)
         #constraints.append( gamma2 < 0)
         for i in range(0,N):
