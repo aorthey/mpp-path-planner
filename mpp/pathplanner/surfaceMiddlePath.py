@@ -72,20 +72,55 @@ def getSurfaceMiddlePathPlanes(start, startNormal, goal, goalNormal, Wsurfaces, 
 def plotMiddlePath(plot, pathPlanes):
         for i in range(0,len(pathPlanes)):
                 for j in range(0,len(pathPlanes[i])):
+                        zz=np.array((0,0,1))
                         [a,b,ar,xcur]=pathPlanes[i][j]
-                        l1 = xcur-0.5*ar
-                        l2 = xcur+0.5*ar
+                        ## zd: height of cross section
+                        ## xd: width of cross section
+                        zd = 1.1
+                        xd = 1.2
+
+                        l1 = xcur-0.5*xd*ar
+                        l2 = xcur+0.5*xd*ar
                         l3 = xcur
                         L = np.array([l1,l2,l3])
-                        plot.point(l1)
-                        plot.point(l2,color=(1,0,1,1))
-                        plot.point(l3,color=(0,0,0,1))
-                        plot.line(L,lw=0.3)
+                        #plot.point(l1)
+                        #plot.point(l2,color=COLOR_SWEPTVOLUME_LEFT)
+                        #plot.point(l3,color=COLOR_SWEPTVOLUME_RIGHT)
+                        #plot.line(L,lw=0.3)
 
-        #for i in range(len(Wsurfaces)):
-        #        V = Wsurfaces[i].getVertexRepresentation()
-        #        plot.walkableSurface( V,\
-        #                        fcolor=((0.2,0.2,0.2,0.5)), thickness=0.01)
+                        l4 = xcur-0.5*xd*ar
+                        l5 = xcur+0.5*xd*ar
+                        l6 = xcur
+                        l4[2]=l1[2]+zd
+                        l5[2]=l2[2]+zd
+                        l6[2]=l3[2]+zd
+
+                        dd=0.02
+                        l7 = l4+dd*a
+                        l8 = l5+dd*a
+                        l9 = l6+dd*a
+
+                        l10 = l1+dd*a
+                        l11 = l2+dd*a
+                        l12 = l3+dd*a
+
+                        V=[]
+                        V.append(l1)
+                        V.append(l2)
+                        V.append(l3)
+                        V.append(l4)
+                        V.append(l5)
+                        V.append(l6)
+                        V.append(l7)
+                        V.append(l8)
+                        V.append(l9)
+                        V.append(l10)
+                        V.append(l11)
+                        V.append(l12)
+
+                        V=np.array(V)
+                        V=V.T[0]
+                        plot.polytopeFromVertices(V.T,fcolor=COLOR_CROSS_SECTION)
 
 def pathPlanesToCVXfootVariables(pathPlanes):
         x_WS = []
