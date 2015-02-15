@@ -26,6 +26,10 @@ class CVXObjectiveFactory:
                 out += "------------------------------\n"
                 return out
 
+        def addSmoothnessMinimization(self, W):
+                self.objfunc += norm(W)
+                self.objfuncNames.append("functional smoothness minimzation")
+
         def addInterpointMinimization(self, x_WS):
                 for i in range(0,len(x_WS)):
                         for j in range(0,len(x_WS[i])-1):

@@ -4,6 +4,7 @@ import numpy as np
 import sys
 from math import pi
 from robot.robotspecifications import *
+from mathtools.functional_basis import *
 
 class CVXConstraintFactory:
         constraints = []
@@ -29,6 +30,46 @@ class CVXConstraintFactory:
 
         def getConstraints(self):
                 return self.constraints
+
+
+        ### TODO: choose appropriate number of points depending on size
+        def getFootpointsFromWalkableSurfaces(self, Wsurfaces):
+                M=15
+                x_WS=[]
+                for i in range(0,len(Wsurfaces)):
+                        x_WS_tmp = []
+                        W=Wsurfaces[i]
+                        for j in range(0,M):
+                                x_WS_tmp.append(Variable(3,1))
+                        x_WS.append(x_WS_tmp)
+                return x_WS
+
+        def getFunctionalSpace(self, x_WS):
+                N = 0
+                for i in range(0,len(x_WS)):
+                        N+=len(x_WS[i])
+
+                M = 1000
+                t = np.linspace(0,1,M)
+                F = Fpoly(t)
+                F=F.T
+                #F = Ffourier(t)
+                #F = F.T
+                Fweight = Variable(M,3)
+                print Fweight.shape
+                if N >= M:
+                        print "functional space not big enough",M,"<",N
+                        sys.exit(0)
+                return [F,Fweight]
+
+        def addFootpointInFunctionalSpace(self, x_WS, F, W):
+                ctr=0
+                for i in range(0,len(x_WS)):
+                        for j in range(0,len(x_WS[i])):
+                                #self.constraints.append( x_WS[i][j] == W.T*F[:,ctr] )
+                                self.constraints.append( norm(x_WS[i][j] - W.T*F[:,ctr])<EPSILON_FUNCTIONAL_SPACE )
+                                ctr+=1
+                self.constraintNames.append("footpoints inside functional space ("+str(ctr)+" constraints)")
 
         def addDistanceBetweenFootpoints(self,x_WS):
                 assert len(x_WS)==self.Nws
