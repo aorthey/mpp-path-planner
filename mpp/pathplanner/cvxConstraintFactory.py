@@ -3,6 +3,7 @@ import cvxpy as cvx
 import numpy as np
 import sys
 from math import pi
+from copy import copy 
 from robot.robotspecifications import *
 from mathtools.functional_basis import *
 
@@ -49,7 +50,7 @@ class CVXConstraintFactory:
                 for i in range(0,len(x_WS)):
                         N+=len(x_WS[i])
 
-                M = 1000
+                M = M_TRAJECTORY_POINTS
                 t = np.linspace(0,1,M)
                 F = Fpoly(t)
                 F=F.T
@@ -104,6 +105,29 @@ class CVXConstraintFactory:
                                 self.constraints.append( np.matrix(Wcur.ap)*x_WS[i][j] == Wcur.bp)
                                 ctr+=2
                 self.constraintNames.append("footpoint on walkable surfaces ("+str(ctr)+" constraints)")
+
+        def addFootpointInsideSurfaceConstraint(self, x_WS, Wsurfaces):
+                R=MIN_DISTANCE_POINTS_TO_BOUNDARY
+                ctr=0
+
+                for i in range(0,len(x_WS)):
+                        W=Wsurfaces[i]
+                        ap = W.ap
+                        A = W.A
+                        b = W.b
+                        Bfoot = copy(b)
+                        for k in range(0,len(x_WS[i])):
+                                for j in range(0,W.numberOfHalfspaces()):
+                                        aprime = A[j] - np.dot(A[j],ap)*ap
+                                        anorm = np.linalg.norm(aprime)
+                                        if anorm>0.001:
+                                                aa = np.dot(A[j],aprime)
+                                                Bfoot[j]=b[j]-R*aa
+                                                self.constraints.append( np.matrix(A[j])*x_WS[i][k] <= Bfoot[j])
+                                                ctr+=1
+
+                self.constraintNames.append("footpoints distance from surface border ("+str(ctr)+" constraints)")
+
 
         def addConnectorVstackConstraint(self, X, CVstack):
                 V=CVstack
