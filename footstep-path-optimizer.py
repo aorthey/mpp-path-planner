@@ -86,22 +86,21 @@ for i in range(0,L):
         Cfactory.addStartPosFootpoint(x_WS,xstart,Wpath)
         Cfactory.addGoalPosFootpoint(x_WS,xgoal,Wpath)
         Cfactory.addFootpointOnSurfaceConstraint(x_WS, Wpath)
-
         constraints = Cfactory.getConstraints()
-        print Cfactory
+
+        #print Cfactory
 
         Ofactory = CVXObjectiveFactory()
         #Ofactory.addInterpointMinimization(x_WS)
         #Ofactory.addSmoothnessMinimization(W)
         objfunc = Ofactory.getObjectiveFunction()
         objective = Minimize(objfunc)
-        print Ofactory
+        #print Ofactory
 
         prob = Problem(objective, constraints)
-        timer = Timer("minimizing homotopy "+str(i)+"/"+str(L))
-        d = prob.solve(solver=SCS, verbose=True, max_iters=1000)
-        print "final cost:",d
-        timer.stop()
+        timer = Timer("minimizing homotopy "+str(i+1)+"/"+str(L))
+        d = prob.solve(solver=SCS, verbose=False, max_iters=1000)
+        timer.stop("final cost: "+str(d))
 
         pts = []
         for j in range(0,len(x_WS)):

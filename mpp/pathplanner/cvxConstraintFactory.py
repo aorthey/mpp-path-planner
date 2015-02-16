@@ -34,7 +34,7 @@ class CVXConstraintFactory:
 
         ### TODO: choose appropriate number of points depending on size
         def getFootpointsFromWalkableSurfaces(self, Wsurfaces):
-                M=15
+                M=MINIMUM_SAMPLES_PER_WALKABLE_SURFACE
                 x_WS=[]
                 for i in range(0,len(Wsurfaces)):
                         x_WS_tmp = []
@@ -56,7 +56,6 @@ class CVXConstraintFactory:
                 #F = Ffourier(t)
                 #F = F.T
                 Fweight = Variable(M,3)
-                print Fweight.shape
                 if N >= M:
                         print "functional space not big enough",M,"<",N
                         sys.exit(0)
@@ -105,6 +104,7 @@ class CVXConstraintFactory:
                                 self.constraints.append( np.matrix(Wcur.ap)*x_WS[i][j] == Wcur.bp)
                                 ctr+=2
                 self.constraintNames.append("footpoint on walkable surfaces ("+str(ctr)+" constraints)")
+
         def addConnectorVstackConstraint(self, X, CVstack):
                 V=CVstack
                 for i in range(0,len(X)):

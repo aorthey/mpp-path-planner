@@ -37,14 +37,14 @@ wplot.allPolytopes(pobjects)
 ctr=0
 fname = env_folder+"/footsteppath"+str(ctr)+".dat"
 while os.path.exists(fname):
-        print ctr
+        print "Plotting path in homotopy class",ctr
         pts=pickle.load( open( fname, "rb") )
         X=pts[:,0]
         Y=pts[:,1]
         Z=pts[:,2]
         X=np.squeeze(X)
         Y=np.squeeze(Y)
-        Z=np.squeeze(Z)+0.05
+        Z=np.squeeze(Z)
         #wplot.ax.scatter(X,Y,Z,marker='o',c='r',s=5)
         wplot.ax.plot3D(X,Y,Z,'-ok',linewidth=5,markersize=2,zorder=100)
         ctr+=1
