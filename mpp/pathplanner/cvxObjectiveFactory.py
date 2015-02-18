@@ -35,5 +35,6 @@ class CVXObjectiveFactory:
                         for j in range(0,len(x_WS[i])-1):
                                 self.objfunc += norm(x_WS[i][j]-x_WS[i][j+1])
                 self.objfuncNames.append("interpoint minimzation")
+
         def getObjectiveFunction(self):
                 return self.objfunc

@@ -36,6 +36,8 @@ class CVXConstraintFactory:
         ### TODO: choose appropriate number of points depending on size
         def getFootpointsFromWalkableSurfaces(self, Wsurfaces):
                 M=MINIMUM_SAMPLES_PER_WALKABLE_SURFACE
+                dmax=PATH_DIST_WAYPOINTS_MAX 
+
                 x_WS=[]
                 for i in range(0,len(Wsurfaces)):
                         x_WS_tmp = []
