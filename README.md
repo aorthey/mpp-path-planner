@@ -7,4 +7,7 @@ of boxes which approximates the workspace, and computes a solution by solving a
 set of convex optimization problems
 ### Dependencies:
  * cvxpy
+ * mpp-robot
+ * mpp-environment
+ * mpp-mathtools
 
