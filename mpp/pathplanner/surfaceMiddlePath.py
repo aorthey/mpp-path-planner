@@ -31,7 +31,6 @@ def getSurfaceMiddlePathPlanes(start, startNormal, goal, goalNormal, Wsurfaces, 
         pathPlanes.append(middlePathToHyperplane(Xmiddle))
 
         #pathPlanesStart = middlePathToHyperplane(Xmiddle)
-
         #pathPlanes_tmp = []
         #for i in range(0,len(Xmiddle)):
         #        pathPlanes_tmp.append(pathPlanesStart[i])
@@ -68,6 +67,18 @@ def getSurfaceMiddlePathPlanes(start, startNormal, goal, goalNormal, Wsurfaces, 
 
         print "computed middle paths"
         return pathPlanes
+
+def plotMiddleFootpath(plot, pathPlanes, start=None):
+        xx = []
+        for i in range(0,len(pathPlanes)):
+                for j in range(0,len(pathPlanes[i])):
+                        zz=np.array((0,0,1))
+                        [a,b,ar,xcur]=pathPlanes[i][j]
+                        xx.append(xcur)
+
+        if not start is None:
+                plot.point(start)
+        plot.line(xx,style='-k')
 
 def plotMiddlePath(plot, pathPlanes):
         for i in range(0,len(pathPlanes)):

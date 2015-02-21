@@ -24,13 +24,14 @@ from pathplanner.surfaceMiddlePath import *
 from environment.urdfparser import URDFtoPolytopes
 
 
-def footstepPathPlotter(env_fname, K = inf):
+def footstepPathPlotter(env_fname, K = inf, plotscene=True ):
         env_folder = os.environ["MPP_PATH"]+"mpp-environment/output"
         Wsurfaces = pickle.load( open( env_folder+"/wsurfaces.dat", "rb" ) )
 
         pobjects = URDFtoPolytopes(env_fname)
         wplot=Plotter()
-        wplot.allPolytopes(pobjects)
+        if plotscene:
+                wplot.allPolytopes(pobjects)
         wplot.allWalkableSurfaces(Wsurfaces)
 
         ctr=0
@@ -54,6 +55,7 @@ def footstepPathPlotter(env_fname, K = inf):
 
 
         wplot.set_view(-90,90)
+        wplot.set_view(40,40)
         #wplot.ax.set_aspect('equal', 'datalim')
         #wplot.ax.set_xlim(-4, 4)
         #wplot.ax.set_ylim(0, 10)

@@ -6,6 +6,7 @@ from math import pi
 from mathtools.linalg import *
 from mathtools.plotter import rotFromRPY
 from mathtools.functional_basis import *
+from robot.robotspecifications import *
 
 M = 100
 t = np.linspace(0,1,M)
@@ -88,11 +89,13 @@ def getMiddlePathFromIntersectionVertices(m1,m2,n1,n2,W,N):
                 constraints.append( np.matrix(W.ap)*x[i] == W.bp)
 
         for i in range(0,N-1):
-                constraints.append( norm(x[i]-x[i+1]) < 0.12)
+                constraints.append( norm(x[i]-x[i+1]) < PATH_DIST_WAYPOINTS_MAX)
 
         for i in range(0,N):
                 for j in range(0,len(VW)):
                         objfunc += norm(x[i]-VW[j])
+                        if i<N-1:
+                                objfunc += norm(x[i+1]-x[i])
 
         ###############################################################################
         # solve

@@ -159,11 +159,14 @@ class CVXConstraintFactory:
                                 [a,b,ar,xcur] = pathPlanes[i][j]
                                 self.constraints.append(np.matrix(a).T*x_WS[i][j] == b)
                                 ctr+=1
+
                 self.constraintNames.append("footpts connection between surfaces ("+str(ctr)+" constraints)")
+
         def addStartNormalConstraint(self, x_WS, startNormal):
                 gammaStart = Variable(1)
                 self.constraints.append( gammaStart*startNormal + x_WS[0][0] == x_WS[0][1] )
                 self.constraintNames.append("first two steps oriented to start ("+str(1)+" constraints)")
+
         def addGoalNormalConstraint(self, x_WS, goalNormal):
                 v = goalNormal
                 N = len(x_WS)
@@ -173,21 +176,44 @@ class CVXConstraintFactory:
                 gammaGoal = Variable(1)
                 self.constraints.append( gammaGoal*v + xgoal == xbefore )
                 self.constraintNames.append("last two steps oriented to goal ("+str(1)+" constraints)")
-        #def addConnectorNormalConstraints(self, x_WS, connectorNormal):
-        #        ctr = 0
-        #        for i in range(0,len(x_WS)-1):
-        #                v = connectorNormal[i]
-        #                Lws = len(x_WS[i])-1
-        #                ## trois points: x before the intersection, x at the intersection and x
-        #                ## after the intersection. They all should lie on a line perpendicular to
-        #                ## the normalnormal of the intersection
-        #                xbefore = x_WS[i][Lws-1]
-        #                xconnect = x_WS[i+1][0]
-        #                xafter = x_WS[i+1][1]
 
-        #                gammaA = Variable(1)
-        #                gammaB = Variable(1)
-        #                self.constraints.append( gammaA*v + xconnect == xafter )
-        #                self.constraints.append( gammaB*v + xconnect == xbefore )
-        #                ctr+=2
-        #        self.constraintNames.append("footpts orientation connection ("+str(ctr)+" constraints)")
+        def addFootpointNormalConstraints(self, x_WS, Wsurfaces):
+                ctr = 0
+                for i in range(0,len(x_WS)-1):
+                        v = connectorNormal[i]
+                        Lws = len(x_WS[i])-1
+                        ## trois points: x before the intersection, x at the intersection and x
+                        ## after the intersection. They all should lie on a line perpendicular to
+                        ## the normalnormal of the intersection
+                        xbefore = x_WS[i][Lws-1]
+                        xconnect = x_WS[i+1][0]
+                        xafter = x_WS[i+1][1]
+
+                        gammaA = Variable(1)
+                        gammaB = Variable(1)
+                        self.constraints.append( gammaA*v + xconnect == xafter )
+                        self.constraints.append( gammaB*v + xconnect == xbefore )
+                        ctr+=2
+
+                self.constraintNames.append("footpts orientation connection ("+str(ctr)+" constraints)")
+
+
+        def addConnectorNormalConstraints(self, x_WS, connectorNormal):
+                ctr = 0
+                for i in range(0,len(x_WS)-1):
+                        v = connectorNormal[i]
+                        Lws = len(x_WS[i])-1
+                        ## trois points: x before the intersection, x at the intersection and x
+                        ## after the intersection. They all should lie on a line perpendicular to
+                        ## the normalnormal of the intersection
+                        xbefore = x_WS[i][Lws-1]
+                        xconnect = x_WS[i+1][0]
+                        xafter = x_WS[i+1][1]
+
+                        gammaA = Variable(1)
+                        gammaB = Variable(1)
+                        self.constraints.append( gammaA*v + xconnect == xafter )
+                        self.constraints.append( gammaB*v + xconnect == xbefore )
+                        ctr+=2
+
+                self.constraintNames.append("footpts orientation connection ("+str(ctr)+" constraints)")

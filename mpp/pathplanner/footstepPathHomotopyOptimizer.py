@@ -92,12 +92,13 @@ def footstepPathHomotopyOptimizer(xstart, xgoal):
                 Cfactory.addGoalPosFootpoint(x_WS,xgoal,Wpath)
                 Cfactory.addFootpointOnSurfaceConstraint(x_WS, Wpath)
                 Cfactory.addFootpointInsideSurfaceConstraint(x_WS, Wpath)
-                constraints = Cfactory.getConstraints()
 
+                #Cfactory.addFootpointNormalConstraints(x_WS, Wpath)
+                constraints = Cfactory.getConstraints()
                 print Cfactory
 
                 Ofactory = CVXObjectiveFactory()
-                #Ofactory.addInterpointMinimization(x_WS)
+                Ofactory.addInterpointMinimization(x_WS)
                 #Ofactory.addSmoothnessMinimization(W)
                 objfunc = Ofactory.getObjectiveFunction()
                 objective = Minimize(objfunc)

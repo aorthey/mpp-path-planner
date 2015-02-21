@@ -11,7 +11,7 @@ env = os.environ["MPP_PATH"]+"mpp-environment/urdf/"
 #####################################################
 #####################################################
 #fname = "wall_simplified.urdf"
-fname = "wall.urdf"
+fname = "wall-extension.urdf"
 #fname = "staircase_stones.urdf"
 #fname = "quatro_homotopy.urdf"
 #xstart = np.array([0,0,2])
@@ -30,13 +30,13 @@ fname = env+fname
 
 time = np.array((0,0))
 htime = np.array([0])
-
 time = computeWalkableSurfaceConnectivity(fname)
-walkableSurfacesPlotter(fname)
+walkableSurfacesPlotter(fname,plotscene=True)
 
-htime = footstepPathHomotopyOptimizer(xstart,xgoal)
+#htime = footstepPathHomotopyOptimizer(xstart,xgoal)
+
 K = len(htime)
-footstepPathPlotter(fname, K)
+footstepPathPlotter(fname, K, plotscene=False)
 
 print "==============================================="
 print " TIMER "
