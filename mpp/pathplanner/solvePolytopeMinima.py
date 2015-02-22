@@ -4,7 +4,6 @@ sys.path.append(os.environ["MPP_PATH"]+"mpp-robot/mpp")
 sys.path.append(os.environ["MPP_PATH"]+"mpp-mathtools/mpp")
 sys.path.append(os.environ["MPP_PATH"]+"mpp-environment/mpp")
 
-from timeit import default_timer as timer
 import numpy as np
 import cvxpy as cvx
 import pickle
@@ -14,6 +13,7 @@ from numpy import inf,array,zeros
 from cvxpy import *
 from math import tan,pi
 from mathtools.util import *
+from mathtools.timer import *
 from mathtools.linalg import *
 from mathtools.walkable import WalkableSurface, WalkableSurfacesFromPolytopes
 from robot.htoq import *
@@ -25,11 +25,14 @@ from pathplanner.surfaceMiddlePath import *
 from multiprocessing import Pool
 
 
-def solvePolytopeMinima(Ae,be,Ark,constraints,objfunc,Wsurfaces_Vstack,Connectors_Vstack,x_WS,heights,pathPlanes,pid):
-        Z_AXIS = np.array((0,0,1))
-        X_AXIS = np.array((1,0,0))
+def solvePolytopeMinima(mid,hid,Aflat,bflat,Harray,Arkflat,constraints,objfunc,Wsurfaces_Vstack,Connectors_Vstack,x_WS,heights,pathPlanes):
 
-        print "starting minima",pid
+        mtimer = Timer("Minima "+str(mid)+"/"+str(len(Aflat)))
+        Ae = Aflat[mid]
+        be = bflat[mid]
+        Ark = Arkflat[mid]
+
+        print "starting minima",mid
 
         rho=[]
         mincon = []
@@ -96,7 +99,17 @@ def solvePolytopeMinima(Ae,be,Ark,constraints,objfunc,Wsurfaces_Vstack,Connector
         ###############################################################################
         # output
         ###############################################################################
+        d=prob.value
+        mtimer.stopWithoutPrint()
 
-        print "minima",pid,"=> ",prob.value
-        return [prob.value,pid]
+        if WRITE_TRAJECTORIES_TO_FILE and d<inf:
+                output_folder = os.environ["MPP_PATH"]+"mpp-path-planner/output/homotopy"+str(hid)+"/minima"+str(mid)
+                if not os.path.exists(output_folder):
+                    os.makedirs(output_folder)
+                pickle.dump( x_WS, open( output_folder+"/x_WS.dat", "wb" ) )
+                pickle.dump( ibRho, open( output_folder+"/ibRho.dat", "wb" ) )
+                pickle.dump( Harray[mid], open( output_folder+"/H.dat", "wb" ) )
+
+        print "Minima",mid,"costs:",d
+        return [d,mid,mtimer.getTime()]
 
