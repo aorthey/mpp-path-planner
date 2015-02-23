@@ -57,7 +57,7 @@ def upperBodyPathPlotter(mid, hid):
 
 if __name__ == '__main__':
 
-        minima = 19
+        minima = 469
         homotopy = 0
         upperBodyPathPlotter(minima, homotopy)
 

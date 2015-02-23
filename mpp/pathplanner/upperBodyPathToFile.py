@@ -76,7 +76,7 @@ def upperBodyPathToFile(mid, Ark, x_WS, ibRho, H, pathPlanes):
 if __name__=='__main__':
 
         homotopy = 0
-        mid = 19
+        mid = 469
 
         robot_folder = os.environ["MPP_PATH"]+"mpp-robot/output/polytopes"
         ARKname = robot_folder+"/Ark.dat"

@@ -91,11 +91,15 @@ def getMiddlePathFromIntersectionVertices(m1,m2,n1,n2,W,N):
         for i in range(0,N-1):
                 constraints.append( norm(x[i]-x[i+1]) < PATH_DIST_WAYPOINTS_MAX)
 
-        for i in range(0,N):
-                for j in range(0,len(VW)):
-                        objfunc += norm(x[i]-VW[j])
-                        if i<N-1:
-                                objfunc += norm(x[i+1]-x[i])
+        for i in range(0,N-1):
+                gammaN = Variable(1,1)
+                objfunc += norm(x[i+1]-gammaN*n1+x[i])
+
+        #for i in range(0,N):
+                #for j in range(0,len(VW)):
+                        #objfunc += norm(x[i]-VW[j])
+                        #if i<N-1:
+                                #objfunc += norm(x[i+1]-x[i])
 
         ###############################################################################
         # solve

@@ -30,6 +30,13 @@ class CVXObjectiveFactory:
                 self.objfunc += norm(W)
                 self.objfuncNames.append("functional smoothness minimzation")
 
+        def addLineMinimization(self, x_WS, n):
+                for i in range(0,len(x_WS)):
+                        for j in range(0,len(x_WS[i])-1):
+                                gamma = Variable(1,1)
+                                self.objfunc += norm(x_WS[i][j]-n*gamma-x_WS[i][j+1])
+                self.objfuncNames.append("all points on line minimzation")
+
         def addInterpointMinimization(self, x_WS):
                 for i in range(0,len(x_WS)):
                         for j in range(0,len(x_WS[i])-1):
