@@ -50,20 +50,20 @@ The parameters for the experiment are defined in mpp-robot/mpp/robot/robotspecif
 #### Section IV (Upper-body optimization)
 
 There are three steps involved:
-(1) Precomputation of the free space inside of the homotopy classes
+##### (1) Precomputation of the free space inside of the homotopy classes
 ```bash
 cd $MPP_PATH/mpp-environment
 python freeSpaceComputationModule.py
 ```
 this should take around 3m20s, and will write the free space representation into a file.
-(2) Sampling of the simplified irreducible configuration space.
+##### (2) Sampling of the simplified irreducible configuration space.
 ```bash
 cd $MPP_PATH/mpp-robot
 python main-convex-set-builder.py
 ```
 this should take around 10s and will create N convex sets containing cross-sections of the robot. N depends on the three parameters SAMPLER_H1_STEP,SAMPLER_H2_STEP,SAMPLER_H3_STEP, which should be changed depending on how accurate one wants to sample (they can be found in mpp-robot/src/robotspecifications.py)
 
-(3) Computation of N local minima. 
+##### (3) Computation of N local minima. 
 ```bash
 cd $MPP_PATH/mpp-path-planner
 python iros2015/upperbody-space-curves-wall.py
