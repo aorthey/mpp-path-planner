@@ -15,16 +15,16 @@ set of convex optimization problems
  * Section III (Footstep optimization)
 
 The results from Figure 5 can be reproduced by
-   python foot-space-curve-2homotopies.py
-
+```bash
+python foot-space-curve-2homotopies.py
+```
 Figure 6 can be reproduced by running
-   python foot-space-curve-4homotopies.py
-
-The averaged times over 10 runs can be reproduced by running
+```bash
+python foot-space-curve-4homotopies.py
+```
+The averaged times over 10 runs can be reproduced by 
+```bash
    python foot-space-curve-2homotopies-table.py
    python foot-space-curve-4homotopies-table.py
-
-The parameters for
-the experiment are defined in mpp-robot/mpp/robot/robotspecifications.py
-
- * Section IV (Upper-body optimization)
+```
+The parameters for the experiment are defined in mpp-robot/mpp/robot/robotspecifications.py
