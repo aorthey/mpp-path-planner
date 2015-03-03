@@ -19,10 +19,8 @@ fname = env+fname
 
 time = np.array((0,0))
 htime = np.array([0])
+
 time = computeWalkableSurfaceConnectivity(fname,clipper=False)
-
-#walkableSurfacesPlotter(fname,plotscene=True)
-
 htime = footstepPathHomotopyOptimizer(xstart,xgoal)
 
 R = len(htime)
