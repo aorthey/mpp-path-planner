@@ -25,21 +25,40 @@ def getAngleAtCtr(xnew, f, ctr):
         an = an/np.linalg.norm(an)
         angle= acos(np.dot(an,xx))
         return angle
+
+
 output_folder = os.environ["MPP_PATH"]+"mpp-path-planner/output/homotopy"+str(FINAL_HOMOTOPY)+"/minima"+str(FINAL_MINIMA)
 svFootFname = output_folder+"/xpathFoot.dat"
 
 ##fpath contains the pos vector and ori vector, both from origin
 fPath = pickle.load( open( svFootFname, "rb" ) )
 
+#print np.around(fPath,2)
+#sys.exit(0)
 fig=figure(1)
 ax = fig.gca()
+
+### DEBUG
+fPath = fPath[3:,:]
+for i in range(0,len(fPath[:,0])):
+        y = fPath[i,1]
+        if np.linalg.norm(y)<1:
+                d = 0.002*y
+                fPath[i,0]-=d
 
 f = interp1d(fPath[:,0],fPath[:,1], kind='linear')
 xl = min(fPath[:,0])
 xu = max(fPath[:,0])
-xnew = np.linspace(min(fPath[:,0]), max(fPath[:,0]), 1000)
 
-ax.plot(xnew,f(xnew))
+xnew = np.linspace(min(fPath[:,0]), max(fPath[:,0]), 10000)
+
+print np.around(fPath,2)
+plot(fPath[:,0], fPath[:,1], 'ok')
+plot(xnew, f(xnew))
+
+plt.show()
+sys.exit(0)
+
 tstart = getAngleAtCtr(xnew, f, 0)
 leftFoot = np.array((xnew[0],f(xnew[0]),0.0,tstart))
 relFootArray = leftFoot
@@ -50,44 +69,45 @@ leftFootArray=np.zeros((0,4))
 rightFootArray=np.zeros((0,4))
 zcomponent=0.0
 
+ctr=0
+
+
 while ctr<len(xnew)-1:
         d=0.0
         ctrstart = ctr
         ##absolute position of left foot
         
-        vc = np.array((xnew[ctr],f(xnew[ctr])))
-        dd = np.linalg.norm(leftFoot[0:2]-vc)
+        vsupport = np.array((xnew[ctr],f(xnew[ctr])))
+        dd = FOOTSTEP_INITIAL_DISTANCE
 
-        while d<FOOTSTEP_MAX_STEP+FOOTSTEP_INITIAL_DISTANCE and \
+        while dd<FOOTSTEP_MAX_STEP+FOOTSTEP_INITIAL_DISTANCE and \
                         ctr<len(xnew)-1:
-                vc = np.array((xnew[ctr],f(xnew[ctr])))
-                vn = np.array((xnew[ctr+1],f(xnew[ctr+1])))
-                dd = np.linalg.norm(leftFoot[0:2]-vc)
-                d+=np.linalg.norm(vc-vn)
                 ctr=ctr+1
+                vc = np.array((xnew[ctr],f(xnew[ctr])))
+                #vn = np.array((xnew[ctr+1],f(xnew[ctr+1])))
+                dd = np.linalg.norm(vsupport-vc)
+
+        print "dist L-R:",ctr,dd
 
         angle = getAngleAtCtr(xnew, f, ctr)
         rightFoot = np.array((xnew[ctr],f(xnew[ctr]),zcomponent,angle))
-        print "dist L-R:",ctr,np.linalg.norm(leftFoot[0:2]-rightFoot[0:2])
         rightFootArray = np.vstack([rightFootArray,rightFoot])
         rfr = rightFoot - leftFoot
 
         relFootArray=np.vstack([relFootArray,rfr])
+
+
+        vsupport = np.array((xnew[ctr],f(xnew[ctr])))
+        vleft = np.array((xnew[ctrstart],f(xnew[ctrstart])))
+
         ctr=ctrstart
 
-        vc = np.array((xnew[ctrstart],f(xnew[ctrstart])))
-        dd = np.linalg.norm(rightFoot[0:2]-vc)
+        dd = np.linalg.norm(vsupport-vleft)
 
-        d=0.0
-        if dd <= FOOTSTEP_MIN_DISTANCE:
-                ctr+=1
-
-        while d<FOOTSTEP_MAX_STEP and ctr<len(xnew)-1:
-                vc = np.array((xnew[ctr],f(xnew[ctr])))
-                vn = np.array((xnew[ctr+1],f(xnew[ctr+1])))
-                dd = np.linalg.norm(rightFoot[0:2]-vc)
-                d+=np.linalg.norm(vc-vn)
+        while dd>FOOTSTEP_INITIAL_DISTANCE and ctr<len(xnew)-1:
                 ctr=ctr+1
+                vc = np.array((xnew[ctr],f(xnew[ctr])))
+                dd = np.linalg.norm(vsupport-vc)
 
         angle = getAngleAtCtr(xnew, f, ctr)
         leftFoot = np.array((xnew[ctr],f(xnew[ctr]),zcomponent,angle))
@@ -95,11 +115,12 @@ while ctr<len(xnew)-1:
         lfr = leftFoot - rightFoot
         relFootArray=np.vstack([relFootArray,lfr])
 
+        dlr = np.linalg.norm(leftFoot[0:2]-rightFoot[0:2])
+        print "dist L-R:",ctr,dlr
 
-        #leftFoot = np.array((xnew[ctr],f(xnew[ctr]),zcomponent,angle))
-        #leftFootArray = np.vstack([leftFootArray,leftFoot])
-
-        print "dist L-R:",ctr,np.linalg.norm(leftFoot[0:2]-rightFoot[0:2])
+        ctr=ctr+1
+        if dlr < FOOTSTEP_MIN_DISTANCE:
+                break
 
         vv=np.dot(rotFromRPY(0,0,rightFoot[3])[:2,:2],np.array((1,0)))
         plot([rightFoot[0],rightFoot[0]+vv[0]],[rightFoot[1],rightFoot[1]+vv[1]],'-ok')

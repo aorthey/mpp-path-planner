@@ -5,6 +5,7 @@ import sys
 from math import pi
 from copy import copy 
 from robot.robotspecifications import *
+from pathplanner.connectorComputeNormal import *
 from mathtools.functional_basis import *
 
 class CVXConstraintFactory:
@@ -196,6 +197,42 @@ class CVXConstraintFactory:
                         ctr+=2
 
                 self.constraintNames.append("footpts orientation connection ("+str(ctr)+" constraints)")
+
+        def addFootpointPerpendicularConstraints(self, x_WS, Connectors):
+                #I = Connectors[i][0]
+                #[n,nn]=computeNormalFromIntersection(I)
+                ctr = 0
+                for i in range(0,len(x_WS)-1):
+                        [v,nn] = computeNormalFromIntersection(Connectors[i][0])
+
+                        ## v normal
+                        Lws = len(x_WS[i])-1
+
+                        xconnect = x_WS[i+1][0]
+                        xn1 = x_WS[i+1][1]
+                        xn2 = x_WS[i+1][2]
+                        xn3 = x_WS[i+1][3]
+
+                        xp1 = x_WS[i][Lws-1]
+                        xp2 = x_WS[i][Lws-2]
+                        xp3 = x_WS[i][Lws-3]
+
+                        gammaA = Variable(1)
+                        gammaB = Variable(1)
+                        gammaC = Variable(1)
+                        gammaD = Variable(1)
+                        gammaE = Variable(1)
+                        gammaF = Variable(1)
+
+                        self.constraints.append( gammaA*v + xconnect == xn1 )
+                        self.constraints.append( gammaB*v + xconnect == xn2 )
+                        self.constraints.append( gammaC*v + xconnect == xn3 )
+                        self.constraints.append( gammaD*v + xconnect == xp1 )
+                        self.constraints.append( gammaE*v + xconnect == xp2 )
+                        self.constraints.append( gammaF*v + xconnect == xp3 )
+                        ctr+=2
+
+                self.constraintNames.append("footpts perpendicular to connector ("+str(ctr)+" constraints)")
 
 
         def addConnectorNormalConstraints(self, x_WS, connectorNormal):

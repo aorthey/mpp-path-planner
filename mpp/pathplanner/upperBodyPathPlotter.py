@@ -19,6 +19,7 @@ from robot.htoq import *
 from robot.robotspecifications import * 
 from environment.walkableSurfacesPlotter import * 
 from environment.connectorsPlotter import * 
+from environment.scenePlotter import * 
 
 def upperBodyPathPlotter(mid, hid):
         plot=Plotter()
@@ -41,8 +42,10 @@ def upperBodyPathPlotter(mid, hid):
         Wsurfaces= pickle.load( open( env_folder+"/wsurfaces.dat", "rb" ) )
         Connector_Vstack= pickle.load( open( env_folder+"/connector_vstack.dat", "rb" ) )
 
-        connectorsPlotter(plot,Connector_Vstack)
+        #connectorsPlotter(plot,Connector_Vstack)
         walkableSurfacesPlotter2(plot,Wsurfaces)
+        wallname = os.environ["MPP_PATH"]+"mpp-environment/urdf/wall-extension.urdf"
+        scenePlotter(plot,wallname)
 
         plot.lines(svPathsLeft,style='-or',colorIn=COLOR_SWEPTVOLUME_LEFT, \
                         zorder=ZORDER_SWEPTVOLUME)
@@ -52,6 +55,7 @@ def upperBodyPathPlotter(mid, hid):
         #plot.ax.axis('equal')
         #plot.set_view(151,42)
         plot.set_view(57,39)
+        plot.set_view(138,18)
         plot.showEnvironment()
 
 

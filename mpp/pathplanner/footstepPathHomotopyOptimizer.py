@@ -24,7 +24,7 @@ from pathplanner.connectorComputeNormal import *
 from pathplanner.surfaceMiddlePath import * 
 
 
-def footstepPathHomotopyOptimizer(xstart, xgoal):
+def footstepPathHomotopyOptimizer(xstart, xgoal, DEBUG=True):
 
         env_folder = os.environ["MPP_PATH"]+"mpp-environment/output"
         Wsurfaces = pickle.load( open( env_folder+"/wsurfaces.dat", "rb" ) )
@@ -35,9 +35,6 @@ def footstepPathHomotopyOptimizer(xstart, xgoal):
         xgoal = projectPointOntoWalkableSurface(xgoal,Wsurfaces[goalWS])
 
         N=len(Wsurfaces)
-
-        for i in range(0,N):
-                print "WS",i,"has neighbors:",G_S.neighbors(i)
 
         ###############################################################################
         # get paths between start and goal surfaces
@@ -58,10 +55,6 @@ def footstepPathHomotopyOptimizer(xstart, xgoal):
                         indices.append(paths[i][k])
 
         indices = sorted(set(indices))
-
-        print "================================================================"
-        print "relevant walkable surfaces:", indices
-        print "================================================================"
 
         ###############################################################################
         # Check which path has the best chances of finding a feasible trajectory
@@ -93,16 +86,15 @@ def footstepPathHomotopyOptimizer(xstart, xgoal):
                 Cfactory.addFootpointOnSurfaceConstraint(x_WS, Wpath)
                 Cfactory.addFootpointInsideSurfaceConstraint(x_WS, Wpath)
 
-                #Cfactory.addFootpointNormalConstraints(x_WS, Wpath)
                 constraints = Cfactory.getConstraints()
-                print Cfactory
+                if DEBUG:
+                        print Cfactory
 
                 Ofactory = CVXObjectiveFactory()
-                Ofactory.addInterpointMinimization(x_WS)
+                #Ofactory.addInterpointMinimization(x_WS)
                 #Ofactory.addSmoothnessMinimization(W)
                 objfunc = Ofactory.getObjectiveFunction()
                 objective = Minimize(objfunc)
-                #print Ofactory
 
                 prob = Problem(objective, constraints)
                 timer = Timer("minimizing homotopy "+str(i+1)+"/"+str(L))

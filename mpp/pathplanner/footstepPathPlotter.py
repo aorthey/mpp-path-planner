@@ -32,6 +32,7 @@ def footstepPathPlotter(env_fname, K = inf, plotscene=True ):
         wplot=Plotter()
         if plotscene:
                 wplot.allPolytopes(pobjects)
+
         wplot.allWalkableSurfaces(Wsurfaces)
 
         ctr=0
@@ -54,14 +55,8 @@ def footstepPathPlotter(env_fname, K = inf, plotscene=True ):
                 fname = env_folder+"/footsteppath"+str(ctr)+".dat"
 
 
-        wplot.set_view(-90,90)
+        #wplot.set_view(-90,90)
         wplot.set_view(40,40)
-        #wplot.ax.set_aspect('equal', 'datalim')
-        #wplot.ax.set_xlim(-4, 4)
-        #wplot.ax.set_ylim(0, 10)
-        #wplot.ax.set_zlim(0, 3)
-        #wplot.point([0,0,2.1],color=COLOR_START_POINT,size=200,zorder=10)
-        #wplot.point([0,8,2.1],color=COLOR_START_POINT,size=200,zorder=10)
 
         wplot.show()
 
