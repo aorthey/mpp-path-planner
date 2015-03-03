@@ -5,13 +5,15 @@ mpp-path-planner belongs to a set of packages to conduct motion planning for a s
 Package uses the prior information from the X space of the robot, plus the stack
 of boxes which approximates the workspace, and computes a solution by solving a
 set of convex optimization problems
-### Dependencies:
+### Dependencies
  * cvxpy
+ * scipy
+ * networkx
  * mpp-robot
  * mpp-environment
  * mpp-mathtools
 
-### Install:
+### Install
 ```bash
 mkdir -p ~/devel/mpp/
 cd ~/devel/mpp
@@ -28,7 +30,7 @@ or in a one-liner:
 mkdir -p ~/devel/mpp/ && cd ~/devel/mpp && git clone git@github.com:orthez/mpp-robot.git && git clone git@github.com:orthez/mpp-environment.git && git clone git@github.com:orthez/mpp-mathtools.git && git clone git@github.com:orthez/mpp-path-planner.git && export MPP_PATH="/home/`whoami`/devel/mpp/" && echo 'export MPP_PATH="/home/`whoami`/devel/mpp/"' >> ~/.bashrc && cd $MPP_PATH/mpp-path-planner
 ```
 ### Experimental results (paper submission IROS 2015)
- * Section III (Footstep optimization)
+#### Section III (Footstep optimization)
 
 The results from Figure 5 can be reproduced by
 ```bash
