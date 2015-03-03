@@ -10,7 +10,7 @@ import pickle
 from robot.robotspecifications import *
 from robot.htoq import *
 
-def upperBodyPathToFile(mid, Ark, x_WS, ibRho, H, pathPlanes):
+def upperBodyPathToFile(mid, Ark, x_WS, ibRho, H, pathPlanes, homotopy):
         N = len(x_WS)
         M = len(x_WS[N-1])
         x_goal = x_WS[N-1][M-1]
@@ -90,4 +90,4 @@ if __name__=='__main__':
         H = pickle.load( open( minimaPath+"/H.dat", "rb" ) )
         pathPlanes = pickle.load( open( homotopyPath+"/pathplanes.dat", "rb" ) )
 
-        upperBodyPathToFile(mid, Ark, x_WS, ibRho, H, pathPlanes)
+        upperBodyPathToFile(mid, Ark, x_WS, ibRho, H, pathPlanes, homotopy)

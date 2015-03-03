@@ -32,7 +32,7 @@ def solvePolytopeMinima(mid,hid,Aflat,bflat,Harray,Arkflat,constraints,objfunc,W
         be = bflat[mid]
         Ark = Arkflat[mid]
 
-        print "starting minima",mid
+        print "Starting Minima",mid,"/",len(Aflat)
 
         rho=[]
         mincon = []
