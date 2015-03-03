@@ -48,9 +48,30 @@ python iros2015/foot-space-curve-4homotopies-table.py
 The parameters for the experiment are defined in mpp-robot/mpp/robot/robotspecifications.py
 
 #### Section IV (Upper-body optimization)
-The execution of the script requires the pre-sampling of irreducible configurations in mpp-robot. However, this depends on the closed-source model of HRP-2. We have provided an approximation which does not depend on the model, but we recommend to contact the author before starting the computation. In any case, the following two scripts compute the all optima, and one single specified minima.
 
+There are three steps involved:
+(1) Precomputation of the free space inside of the homotopy classes
 ```bash
-python path-optimizer-test.py
-python path-optimizer-single-minima.py
+cd $MPP_PATH/mpp-environment
+python freeSpaceComputationModule.py
 ```
+this should take around 3m20s, and will write the free space representation into a file.
+(2) Sampling of the simplified irreducible configuration space.
+```bash
+cd $MPP_PATH/mpp-robot
+python main-convex-set-builder.py
+```
+this should take around 10s and will create N convex sets containing cross-sections of the robot. N depends on the three parameters SAMPLER_H1_STEP,SAMPLER_H2_STEP,SAMPLER_H3_STEP, which should be changed depending on how accurate one wants to sample (they can be found in mpp-robot/src/robotspecifications.py)
+
+(3) Computation of N local minima. 
+```bash
+cd $MPP_PATH/mpp-path-planner
+python iros2015/upperbody-space-curves-wall.py
+```
+Once this computation is done, we have analyzed all local minima of the planning problem. To display one specific minima, you can specify it with the variables FINAL_HOMOTOPY and FINAL_MINIMA in mpp-robot/src/robotspecifications.py.
+
+For the wall experiment, we have choosen FINAL_HOMOTOPY=0 and FINAL_MINIMA=27 to produce the final results. You can reproduce them via
+```bash
+python iros2015/upperbody-space-curves-final-minima-plot.py
+```
+The final results will be saved in output/homotopy0/minima27/, where you can find xpathFoot, which contains the foot path, and xpathQ containing the joint values of the robot along the path. 
