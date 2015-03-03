@@ -48,7 +48,8 @@ python iros2015/foot-space-curve-4homotopies-table.py
 The parameters for the experiment are defined in mpp-robot/mpp/robot/robotspecifications.py
 
 #### Section IV (Upper-body optimization)
-The execution of the script requires the pre-sampling of irreducible configurations in mpp-robot. However, this depends on the closed-source model of HRP-2. We have provided an approximation which does not depend on the model, but the precomputation is not trivial, and so we recommend to contact the author before starting the computation. In any case, the following two scripts compute the complete optima, and in case we succeded, we can specify a single minima which will be displayed.
+The execution of the script requires the pre-sampling of irreducible configurations in mpp-robot. However, this depends on the closed-source model of HRP-2. We have provided an approximation which does not depend on the model, but we recommend to contact the author before starting the computation. In any case, the following two scripts compute the all optima, and one single specified minima.
+
 ```bash
 python path-optimizer-test.py
 python path-optimizer-single-minima.py
