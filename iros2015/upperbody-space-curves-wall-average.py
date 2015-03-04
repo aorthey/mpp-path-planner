@@ -4,7 +4,6 @@ sys.path.append(os.environ["MPP_PATH"]+"mpp-robot/mpp")
 sys.path.append(os.environ["MPP_PATH"]+"mpp-mathtools/mpp")
 sys.path.append(os.environ["MPP_PATH"]+"mpp-environment/mpp")
 
-from timeit import default_timer as timer
 import numpy as np
 import cvxpy as cvx
 import pickle
@@ -18,6 +17,7 @@ from environment.walkableSurfacesPlotter import *
 from environment.scenePlotter import *
 from environment.connectorsPlotter import *
 from mathtools.linalg import *
+from mathtools.timer import *
 from mathtools.walkable import WalkableSurface, WalkableSurfacesFromPolytopes
 from robot.htoq import *
 from robot.robotspecifications import * 
@@ -84,6 +84,7 @@ XspaceMinima = len(Aflat)
 avgtime = 0.0
 Nruns=10
 for avg in range(0,Nruns):
+        avgtimer=Timer()
         startWS = -1
         goalWS = -1
         ds = 10000

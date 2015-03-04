@@ -7,8 +7,10 @@ import matplotlib.pyplot as plt
 x = np.arange(0,10)
 ##in minutes
 rrt = np.array((217,367,235,574,397,44,979,165,2637,123))
-pp = 35*np.ones((10,1))
-
+pp = np.array((15.06, 15.28, 15.26,15.37,15.06,15.06,15.07,15.08,15.10,15.11))
+##+0.35
+pp = pp+0.35
+#pp = np.array((15.06, 15.28, 15.26,15.37,15.06,15.06,15.07,15.08,15.10,15.11))
 
 params = {'legend.fontsize': 20,
           'legend.linewidth': 2}
@@ -25,11 +27,10 @@ fig = plt.figure()
 ax = fig.gca()
 
 lrrt = ax.semilogy(x,rrt,'-or',linewidth=2,markersize=10,label='RRT')
-lpp = ax.semilogy(x,pp,'-ob',linewidth=2,markersize=10,label='PP')
+lpp = ax.semilogy(x,pp,'-ob',linewidth=2,markersize=10,label='PP',zorder=500)
 
 ax.set_ylim((0, 3000))
 ax.legend()
-
 
 ax.set_axis_bgcolor('white')
 ax.patch.set_facecolor('white')
