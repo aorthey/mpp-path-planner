@@ -40,5 +40,5 @@ plt.ylabel("Time(s)", **axfont)
 
 matplotlib.rc('font', **font)
 savefig('results-trim.png', bbox_inches='tight')
-os.system('cp results-trim.png /home/aorthey/git/15-orthey-iros/images/simulations/')
+#os.system('cp results-trim.png /home/aorthey/git/15-orthey-iros/images/simulations/')
 plt.show()

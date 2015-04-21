@@ -21,14 +21,14 @@ from robot.robotspecifications import *
 from pathplanner.connectorsGetMiddlePath import * 
 from pathplanner.connectorComputeNormal import * 
 from pathplanner.surfaceMiddlePath import * 
-from environment.urdfparser import URDFtoPolytopes
+from environment.fileparser import fileToPolytopes
 
 
 def footstepPathPlotter(env_fname, K = inf, plotscene=True ):
         env_folder = os.environ["MPP_PATH"]+"mpp-environment/output"
         Wsurfaces = pickle.load( open( env_folder+"/wsurfaces.dat", "rb" ) )
 
-        pobjects = URDFtoPolytopes(env_fname)
+        pobjects = fileToPolytopes(env_fname)
         wplot=Plotter()
         if plotscene:
                 wplot.allPolytopes(pobjects)
