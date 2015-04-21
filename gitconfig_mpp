@@ -1,0 +1,28 @@
+[alias]
+        mppst = "!sh -c 'cd $MPP_PATH/mpp-environment \
+                && echo \"--------------------------\nmpp-environment\n--------------------------\n\" \
+                && git status --untracked-files=no \
+                && cd $MPP_PATH/mpp-robot \
+                && echo \"--------------------------\nmpp-robot\n--------------------------\n\" \
+                && git status --untracked-files=no \
+                && cd $MPP_PATH/mpp-mathtools \
+                && echo \"--------------------------\nmpp-mathtools\n--------------------------\n\" \
+                && git status --untracked-files=no \
+                && cd $MPP_PATH/mpp-path-planner \
+                && echo \"--------------------------\nmpp-path-planner\n--------------------------\n\" \
+                && git status --untracked-files=no \
+                ' -"
+        mppupdate = "!sh -c 'cd $MPP_PATH/mpp-environment \
+                && echo \"--------------------------\nmpp-environment\n--------------------------\n\" \
+                && git pull origin master \
+                && cd $MPP_PATH/mpp-robot \
+                && echo \"--------------------------\nmpp-robot\n--------------------------\n\" \
+                && git pull origin master \
+                && cd $MPP_PATH/mpp-mathtools \
+                && echo \"--------------------------\nmpp-mathtools\n--------------------------\n\" \
+                && git pull origin master \
+                && cd $MPP_PATH/mpp-path-planner \
+                && echo \"--------------------------\nmpp-path-planner\n--------------------------\n\" \
+                && git pull origin master \
+                ' -"
+
