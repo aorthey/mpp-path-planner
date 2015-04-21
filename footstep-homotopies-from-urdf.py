@@ -34,13 +34,15 @@ fname = env+fname
 
 time = np.array((0,0))
 htime = np.array([0])
-#time = computeWalkableSurfaceConnectivity(fname)
-walkableSurfacesPlotter(fname,plotscene=True)
+
+time = computeWalkableSurfaceConnectivity(fname)
+
+#walkableSurfacesPlotter(fname,plotscene=False)
 
 htime = footstepPathHomotopyOptimizer(xstart,xgoal)
 
 K = len(htime)
-footstepPathPlotter(fname, K, plotscene=False)
+footstepPathPlotter(fname, K, plotscene=True)
 
 print "==============================================="
 print " TIMER "
